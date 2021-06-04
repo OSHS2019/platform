@@ -2072,6 +2072,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             else {
                 that.vars.windowsCache[identifierKey].data = that._transformData(data, numSecondsPaddedBefore, options.window_length, numSecondsToPadBeforeAndAfter);
                 if (callback) {
+                    console.log("here");
                     callback(that.vars.windowsCache[identifierKey].data);
                 }
             }
@@ -2085,6 +2086,8 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
     _transformData: function(input, numSecondsPaddedBefore, numSecondsDataOfInterest, numSecondsPaddedAfter) {
         var that = this;
         var channels = [];
+        var options = -1;
+        var requiredName = "Thor"
         var channelAudioRepresentations = {};
         var channelNumSamples = {};
         var samplingRate = input.sampling_rate;
@@ -2098,7 +2101,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             var maxIn = scaleFactorAmplitude;
             //console.log(maxIn);
             var thisCounting = values.reduce((a,b) => a + 1);
-            console.log(name);
+            //console.log(name);
             var avg = (values.reduce((a,b) => a + b))/thisCounting;
             avg = Math.abs(avg);
             //console.log(avg);
@@ -2117,16 +2120,94 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                // console.log(valuesScaled);
             }
             audioBuffer.copyToChannel(valuesScaled, 0, 0);
-
-          
+          var scaleFault = 0;
+            if( options == 0){
+                switch(name){
+                    case  "F4-A1":
+                        scaleFault = 1;
+                        break;
+        
+                    case "C4-A1":
+                        scaleFault = 1;
+                        break;
+                    case "O2-A1":
+                        scaleFault = 1;
+                        break;
+                    case "LOC-A2":
+                        scaleFault = 1;
+                        break;
+                    case "ROC-A1":
+                        scaleFault = 1;
+                        break;
+                    case "Chin 1-Chin 2":
+                        scaleFault = 1000;
+                        break;
+        
+                    case "ECG":
+                        scaleFault = 100;
+                        break;
+                    case "Leg/L":
+                        scaleFault = 50;
+                        break;
+                    case "Leg/R":
+                        scaleFault = 50;
+                        break;
+                    case "Snore":
+                        scaleFault = 200;
+                        break;
+                    case "Airflow":
+                        scaleFault = 100;
+                        break;
+                    case "Nasal Pressure":
+                        scaleFault = 10;     
+                        break;
+                    case "Thor":
+                        scaleFault = 100;
+                        break;
+                    case "Abdo":
+                        scaleFault = 10;
+                        break;
+                    case "SpO2":
+                        scaleFault = 1;
+                        break;
+                }
+                scaleFactorAmplitude = scaleFactorAmplitude*scaleFault;
+                sessionStorage.setItem(name+"scaleFactorAmplitude", scaleFault);
+                console.log(name);
+                console.log(scaleFactorAmplitude);
+            }
+            else if(options == 2){
             //console.log(changeVal);
+            console.log(scaleFactorAmplitude);
             while(changeVal > 0 && scaleValueChange > 0 && changeVal < 10000 && (scaleValueChange*10) < 500){
-                console.log(changeVal);
+               //       console.log(changeVal);
                 scaleFactorAmplitude = scaleFactorAmplitude*10;
                 scaleValueChange = scaleFactorAmplitude*maxIn;
-                console.log(scaleFactorAmplitude*maxIn);
+               // console.log(scaleFactorAmplitude*maxIn);
                 changeVal = changeVal*7;
             }
+            console.log(name);
+            console.log(scaleFactorAmplitude);
+            sessionStorage.setItem((name+"scaleFactorAmplitude"), scaleFactorAmplitude);
+        }
+        else if(options == 1){
+            var scaleFault = sessionStorage.getItem(name+"scaleFactorAmplitude");
+            if(name == requiredName){
+                scaleFault = scaleFault*5;
+               
+            }
+            sessionStorage.setItem((name+"scaleFactorAmplitude"), scaleFault);
+            scaleFactorAmplitude = scaleFactorAmplitude*scaleFault;
+        }
+        else if(options == -1){
+            var scaleFault = sessionStorage.getItem(name+"scaleFactorAmplitude");
+            if(name == requiredName){
+                scaleFault = scaleFault/5;
+               
+            }
+            sessionStorage.setItem((name+"scaleFactorAmplitude"), scaleFault);
+            scaleFactorAmplitude = scaleFactorAmplitude*scaleFault;
+        }
          /*   
             if(scaleValueChange > 500 ){
                 scaleValueChange = 500/maxIn;
@@ -2171,6 +2252,8 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         }
         return output;
     },
+
+
 
     _applyFrequencyFilters: function(data, callback) {
         var that = this;
