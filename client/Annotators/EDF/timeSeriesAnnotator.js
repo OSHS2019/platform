@@ -116,17 +116,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         }],
         boxAnnotationUserSelection: [{
             title: 'Box Annotations',
-            options: [
-                {
-                    name: "Off",
-                    value: "none",
-                    default: true
-                },
-                {
-                    name: "Show My",
-                    value: "my",
-                },
-            ]
+            options: []
         }],
         keyboardInputEnabled: true,
         isReadOnly: false,
@@ -1351,10 +1341,23 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
 
         $(".frequency_filter_panel").after($("<div style=\"margin-bottom: 20px\" class=\"user_selection_panel\"></div>"))
 
-        //Allow admins to see all annotations from differnt users,, by adding them to dropdown
-        if (Roles.userIsInRole(Meteor.userId(), 'admin')) {
-            var temp = that.options.boxAnnotationUserSelection
+        that.options.boxAnnotationUserSelection[0].options = []
 
+        var temp = that.options.boxAnnotationUserSelection
+
+        temp[0].options.push(
+        {
+            name: "Off",
+            value: "none",
+            default: true
+        },
+        {
+            name: "Show My",
+            value: "my",
+        })
+
+        //Allow admins to see all annotations from differnt users, by adding them to dropdown
+        if (Roles.userIsInRole(Meteor.userId(), 'admin')) {
             temp[0].options.push({ name: "Show All", value: "all" })
 
             assign = Assignments.find({
