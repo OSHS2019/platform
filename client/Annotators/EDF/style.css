@@ -177,6 +177,15 @@
   width: 160px;
 }
 
+.user_selection_panel {
+  float: left;
+  margin: 0;
+}
+
+.user_selection_panel .select_panel {
+  width: 250px;
+}
+
 .button_container {
   padding: 0;
 }

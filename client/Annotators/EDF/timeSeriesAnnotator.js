@@ -1,5 +1,5 @@
 import { ReactiveVar } from 'meteor/reactive-var';
-import { Annotations, Preferences } from '/collections';
+import { Annotations, Preferences, Assignments } from '/collections';
 import swal from 'sweetalert2';
 
 var Highcharts = require('highcharts/highstock');
@@ -114,6 +114,20 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                 },
             ],
         }],
+        boxAnnotationUserSelection: [{
+            title: 'Box Annotations',
+            options: [
+                {
+                    name: "Off",
+                    value: "none",
+                    default: true
+                },
+                {
+                    name: "Show My",
+                    value: "my",
+                },
+            ]
+        }],
         keyboardInputEnabled: true,
         isReadOnly: false,
         startTime: 0,
@@ -176,7 +190,8 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             scrollThroughExamplesAutomatically: true,
             scrollThroughExamplesSpeedInSeconds: 5,
             showUserAnnotations: true,
-            order: ['sleep_spindle', 'k_complex', 'rem', 'vertex_wave'],
+            showAllBoxAnnotations: "",
+            order: ['sleep_spindle', 'k_complex', 'rem', 'vertex_wave', 'delta_wave'],
             options: {
                 'sleep_spindle': {
                     name: 'Spindle',
@@ -351,7 +366,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             annotationsLoaded: false,
             selectedChannelIndex: undefined,
             currentWindowData: null,
-            currentWindowStart: null,
+            currentWindowStart: 0,
             currentWindowStartReactive: new ReactiveVar(null),
             lastActiveWindowStart: null,
             forwardEnabled: undefined,
@@ -1331,6 +1346,61 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         });
     },
 
+    _setupAnnotationDisplayType: function() {
+        var that = this
+
+        $(".frequency_filter_panel").after($("<div style=\"margin-bottom: 20px\" class=\"user_selection_panel\"></div>"))
+
+        //Allow admins to see all annotations from differnt users,, by adding them to dropdown
+        if (Roles.userIsInRole(Meteor.userId(), 'admin')) {
+            var temp = that.options.boxAnnotationUserSelection
+
+            temp[0].options.push({ name: "Show All", value: "all" })
+
+            assign = Assignments.find({
+                task: that.options.context.task._id,
+                data: that.options.context.data._id,
+            }, {
+                sort: { updatedAt: -1 },
+            }).fetch();
+
+            var users = assign[0].users
+            var userNames = Meteor.users.find({ _id: { $in: users } }, { username: 1 }).fetch().map(u => u.username)
+
+            for (var i = 0; i < users.length; i++) {
+                var user = users[i]
+                var username = userNames[i]
+                temp[0].options.push({name: username, value: user})
+            }
+        }
+
+        var selection = that.options.boxAnnotationUserSelection || []
+
+        selection.forEach((boxAnnotation, t) => {
+            var boxAnnotationSettings = boxAnnotation.options;
+
+            var selectContainer = $('<div class="select_panel"><select></select></div>').appendTo(that.element.find('.user_selection_panel'));
+            var select = selectContainer.find('select');
+
+            boxAnnotationSettings.forEach(function(boxAnnotationSetting) {
+                var selectedString = '';
+                if (boxAnnotationSetting.default) {
+                    selectedString = ' selected="selected"';
+                }
+                select.append('<option value="' + boxAnnotationSetting.value + '"' + selectedString + '>' + boxAnnotation.title + ': ' + boxAnnotationSetting.name + '</option>');
+            });
+            select.material_select();
+            select.change(function() {
+                that.options.features.showAllBoxAnnotations = select.val()
+                that.vars.annotationsLoaded = false
+                that.vars.annotationsCache = []
+                that._removeAnnotationBox()
+                that._refreshAnnotations()
+            })
+            select.change();
+        });
+    },
+
     _setupFeaturePanel: function() {
         var that = this;
         $('[data-toggle="popover"]').popover({ trigger: 'hover' });
@@ -1440,6 +1510,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         var that = this;
         that._setupMontageSelector();
         that._setupFrequencyFilterSelector();
+        that._setupAnnotationDisplayType();
         if (that.options.experiment.running) {
             that._updateNavigationStatusForExperiment();
             var currentWindowIndex = that.options.experiment.current_condition.current_window_index;
@@ -2098,7 +2169,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             var maxIn = scaleFactorAmplitude;
             //console.log(maxIn);
             var thisCounting = values.reduce((a,b) => a + 1);
-            console.log(name);
+            //console.log(name);
             var avg = (values.reduce((a,b) => a + b))/thisCounting;
             avg = Math.abs(avg);
             //console.log(avg);
@@ -2121,10 +2192,10 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
           
             //console.log(changeVal);
             while(changeVal > 0 && scaleValueChange > 0 && changeVal < 10000 && (scaleValueChange*10) < 500){
-                console.log(changeVal);
+                //console.log(changeVal);
                 scaleFactorAmplitude = scaleFactorAmplitude*10;
                 scaleValueChange = scaleFactorAmplitude*maxIn;
-                console.log(scaleFactorAmplitude*maxIn);
+                //console.log(scaleFactorAmplitude*maxIn);
                 changeVal = changeVal*7;
             }
          /*   
@@ -2682,6 +2753,16 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             height,
             yValue,
         };
+    },
+
+    //removes all box annotations from screen (they still exist in the backend)
+    _removeAnnotationBox: function(){
+        var that = this;
+        const annotations = that.vars.chart.annotations.allItems
+
+        for (let i = annotations.length - 1; i > -1; --i) {
+            annotations[i].destroy()
+        }
     },
 
     _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType, timeEnd, confidence, comment, annotationData) {
@@ -3529,6 +3610,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
     _getAnnotations: function(recording_name, window_start, window_end, correctAnswers) {
         var that = this;
         if (!that.options.features.showUserAnnotations) return;
+        if (that.options.features.showAllBoxAnnotations == "none") return;
 
         var cacheKey = that._getAnnotationsCacheKey(recording_name, window_start, window_end, correctAnswers);
         if (that.vars.annotationsLoaded || that.vars.annotationsCache[cacheKey]) {
@@ -3545,14 +3627,51 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         that.vars.annotationsCache[cacheKey] = {
             annotations: [],
         };
-        var annotations = Annotations.find({
-            assignment: that.options.context.assignment._id,
-            user: Meteor.userId(),
-            data: that.options.context.data._id,
-            type: 'SIGNAL_ANNOTATION',
-        }, {
-            sort: { updatedAt: -1 },
-        }).fetch();
+        var annotations;
+
+        if (Roles.userIsInRole(Meteor.userId(), 'admin')) {
+            if (that.options.features.showAllBoxAnnotations == "all") {
+                //grab annotations from all users
+                annotations = Annotations.find({
+                    assignment: that.options.context.assignment._id,
+                    data: that.options.context.data._id,
+                    type: 'SIGNAL_ANNOTATION',
+                }, {
+                    sort: { updatedAt: -1 },
+                }).fetch();
+            } else if (that.options.features.showAllBoxAnnotations == "my") {
+                //grab annotations from this current admin user
+                annotations = Annotations.find({
+                    assignment: that.options.context.assignment._id,
+                    data: that.options.context.data._id,
+                    user: Meteor.userId(),
+                    type: 'SIGNAL_ANNOTATION',
+                }, {
+                    sort: { updatedAt: -1 },
+                }).fetch();
+            } else if (that.options.features.showAllBoxAnnotations != "") {
+                //grab annotations from the selected user
+                annotations = Annotations.find({
+                    assignment: that.options.context.assignment._id,
+                    data: that.options.context.data._id,
+                    user: that.options.features.showAllBoxAnnotations,
+                    type: 'SIGNAL_ANNOTATION',
+                }, {
+                    sort: { updatedAt: -1 },
+                }).fetch();
+            }
+        } else {
+            //grab annotations from this current non-admin user
+            annotations = Annotations.find({
+                assignment: that.options.context.assignment._id,
+                data: that.options.context.data._id,
+                user: Meteor.userId(),
+                type: 'SIGNAL_ANNOTATION',
+            }, {
+                sort: { updatedAt: -1 },
+            }).fetch();
+        }
+
         that.vars.annotationsLoaded = true;
         
         annotations = annotations.map(function(annotation) {
