@@ -186,6 +186,11 @@
   width: 250px;
 }
 
+.user_selection_panel .optgroup {
+  text-align: center;
+  font-weight: normal;
+}
+
 .button_container {
   padding: 0;
 }

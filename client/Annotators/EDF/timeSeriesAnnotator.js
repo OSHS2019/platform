@@ -1358,7 +1358,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
 
         //Allow admins to see all annotations from differnt users, by adding them to dropdown
         if (Roles.userIsInRole(Meteor.userId(), 'admin')) {
-            temp[0].options.push({ name: "Show All", value: "all" })
+            temp[0].options.push({ name: "Show All (including your own)", value: "all" })
 
             assign = Assignments.find({
                 task: that.options.context.task._id,
@@ -1368,11 +1368,14 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             }).fetch();
 
             var users = assign[0].users
-            var userNames = Meteor.users.find({ _id: { $in: users } }, { username: 1 }).fetch().map(u => u.username)
+            var userNames = Meteor.users.find({ _id: { $in: users } }, { username: 1, sort: { updatedAt: -1 } }).fetch().map(u => u.username)
 
             for (var i = 0; i < users.length; i++) {
                 var user = users[i]
                 var username = userNames[i]
+                if (user == Meteor.userId()){
+                    continue
+                }
                 temp[0].options.push({name: username, value: user})
             }
         }
@@ -1391,6 +1394,9 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                     selectedString = ' selected="selected"';
                 }
                 select.append('<option value="' + boxAnnotationSetting.value + '"' + selectedString + '>' + boxAnnotation.title + ': ' + boxAnnotationSetting.name + '</option>');
+                if(boxAnnotationSetting.value == "my"){
+                    select.append('<optgroup id="otherUsers" label="Other Users"></optgroup>')
+                }
             });
             select.material_select();
             select.change(function() {
