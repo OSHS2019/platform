@@ -1394,7 +1394,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                     selectedString = ' selected="selected"';
                 }
                 select.append('<option value="' + boxAnnotationSetting.value + '"' + selectedString + '>' + boxAnnotation.title + ': ' + boxAnnotationSetting.name + '</option>');
-                if(boxAnnotationSetting.value == "my"){
+                if(boxAnnotationSetting.value == "my" && Roles.userIsInRole(Meteor.userId(), 'admin')){
                     select.append('<optgroup id="otherUsers" label="Other Users"></optgroup>')
                 }
             });
