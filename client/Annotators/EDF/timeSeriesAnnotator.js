@@ -185,10 +185,11 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             scrollThroughExamplesSpeedInSeconds: 5,
             showUserAnnotations: true,
             showAllBoxAnnotations: "",
-            order: ['sleep_spindle', 'k_complex', 'rem', 'vertex_wave', 'delta_wave'],
+            order: ['H1', 'H2', 'OA', 'CA', 'MA', 'ARO', 'desat', 'Arrhythmia', 'Obs', 'Cen', 'Mix', 'Wake Period', 'Sleep Period', 'Empty'],
             options: {
-                'sleep_spindle': {
-                    name: 'Spindle',
+                'H1': {
+                    name: 'H1',
+                    class: 'blue lighten-2',
                     annotation: {
                         red: 86,
                         green: 186,
@@ -210,9 +211,11 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                     training: {
                         windows: [],
                     },
+                    validChannels: {"PSG Annotation": [9, 10, 11, 12, 13], "ANNE Annotation": ["", "", ""]}
                 },
-                'k_complex': {
-                    name: 'K-Complex',
+                'H2': {
+                    name: 'H2',
+                    class: 'purple lighten-4',
                     annotation: {
                         red: 195,
                         green: 123,
@@ -234,9 +237,11 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                     training: {
                         windows: [],
                     },
+                    validChannels: {"PSG Annotation": [9, 10, 11, 12, 13], "ANNE Annotation": []}
                 },
-                'rem': {
-                    name: 'REM',
+                'OA': {
+                    name: 'OA',
+                    class: 'red lighten-4',
                     annotation: {
                         red: 238,
                         green: 75,
@@ -258,9 +263,11 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                     training: {
                         windows: [],
                     },
+                    validChannels: {"PSG Annotation": [9, 10, 11, 12, 13], "ANNE Annotation": []}
                 },
-                'vertex_wave': {
-                    name: 'Vertex Wave',
+                'CA': {
+                    name: 'CA',
+                    class: 'grey',
                     annotation: {
                         red: 0,
                         green: 0,
@@ -282,9 +289,11 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                     training: {
                         windows: [],
                     },
+                    validChannels: {"PSG Annotation": [9, 10, 11, 12, 13], "ANNE Annotation": []}
                 },
-                'delta_wave': {
-                    name: 'Delta Wave',
+                'MA': {
+                    name: 'MA',
+                    class: 'shades',
                     annotation: {
                         red: 20,
                         green: 230,
@@ -306,7 +315,321 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                     training: {
                         windows: [],
                     },
-                }
+                    validChannels: {"PSG Annotation": [9, 10, 11, 12, 13], "ANNE Annotation": []}
+                },
+                'Aro': {
+                    name: 'Aro',
+                    class: 'shades',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    //PSG files channels: F4-A1  C4-A1  O2-A1   ANNE file channels: Pleth PAT_trend HR(bpm)
+                    validChannels: {"PSG Annotation": [0, 1, 2], "ANNE Annotation": []}
+                },
+                'LM': {
+                    name: 'LM',
+                    class: 'shades',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": [7,  8], "ANNE Annotation": []}
+                },
+                'desat': {
+                    name: 'desat',
+                    class: 'shades',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": [14], "ANNE Annotation": []}
+                },
+                'Arrhythmia': {
+                    name: 'Arrhythmia',
+                    class: 'shades',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": ["",  "",  ""], "ANNE Annotation": []}
+                },
+                'Arrhythmia': {
+                    name: 'Arrhythmia',
+                    class: 'shades',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": ["",  "",  ""], "ANNE Annotation": []}
+                },
+                'Cen': {
+                    name: 'Obs',
+                    class: 'shades',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": ["",  "",  ""], "ANNE Annotation": []}
+                },
+                'Cen': {
+                    name: 'Cen',
+                    class: 'shades',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": ["",  "",  ""], "ANNE Annotation": []}
+                },
+                'Mix': {
+                    name: 'Mix',
+                    class: 'shades',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": ["",  "",  ""], "ANNE Annotation": []}
+                },
+                'Hyp': {
+                    name: 'Hyp',
+                    class: 'shades',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": ["",  "",  ""], "ANNE Annotation": []}
+                },
+                'Sleep Period': {
+                    name: 'Sleep Period',
+                    class: 'blue-grey lighten-1',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": ["",  "",  ""], "ANNE Annotation": []}
+                },
+                'Wake Period': {
+                    name: 'Wake Period',
+                    class: 'amber lighten-4',
+                    annotation: {
+                        red: 20,
+                        green: 230,
+                        blue: 30,
+                        alpha: {
+                            min: 0.18,
+                            max: 0.35
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": ["",  "",  ""], "ANNE Annotation": []}
+                },
+                'Empty': {
+                    name: 'Empty',
+                    class: 'grey lighten-2',
+                    annotation: {
+                        red: 86,
+                        green: 186,
+                        blue: 219,
+                        alpha: {
+                            min: 0.22,
+                            max: 0.45
+                        }
+                    },
+                    answer: {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                        alpha: {
+                            min: 0.1,
+                            max: 0.25
+                        }
+                    },
+                    training: {
+                        windows: [],
+                    },
+                    validChannels: {"PSG Annotation": [], "ANNE Annotation": []}
+                },
             },
         },
     },
@@ -1179,7 +1502,10 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         var that = this;
         that._adaptContent();
         that._setupTimer();
-        that._setupFeaturePanel();
+        //that._setupFeaturePanel();
+        //set the unslected feature to empty.
+        that.vars.activeFeatureType = that.options.features.order[14]
+
         that._setupNavigationPanel();
         that._setupArtifactPanel();
         that._setupSleepStagePanel();
@@ -1510,8 +1836,6 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
     },
 
    
-        
-
     _setupFeaturePanel: function() {
         var that = this;
         $('[data-toggle="popover"]').popover({ trigger: 'hover' });
@@ -3120,7 +3444,6 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
         var that = this;
         that._getDelay();
         that.vars.channelsDealyedNames = that._getChannelsDisplayed();
-        //console.log( that._getChannelsDisplayed());
 
         if(that.vars.delayAmount.length == 0){
             that.vars.channelsDealyedNames.forEach(channel => {
@@ -3133,10 +3456,8 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
         }
         else{
             if (that.options.isReadOnly) return;
-         //   console.log(that.options.features.order);
             if (!that.options.features.order || !that.options.features.order.length) return;
             var chart = that.vars.chart;
-        //    console.log(chart);
             var container = chart.container;
 
             function drag(e) {
@@ -3151,11 +3472,9 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
                 var annotationId = undefined;
                 var clickXValue = that._convertPixelsToValue(clickX, 'x');
                 var clickYValue = that._convertPixelsToValue(clickY, 'y');
-              //  console.log(clickXValue);
                 var channelIndexStart = that._getChannelIndexFromY(clickYValue);
                 var channelIndices = [ channelIndexStart ];
                 var featureType = that.vars.activeFeatureType;
-
                 annotation = that._addAnnotationBox(annotationId, clickXValue, channelIndices, featureType);
 
                 function getAnnotationChannelIndices(e) {
@@ -3230,7 +3549,6 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
                 var annotationId = undefined;
                 var clickXValue = that._convertPixelsToValue(clickX, 'x');
                 var clickYValue = that._convertPixelsToValue(clickY, 'y');
-            // console.log(clickXValue);
                 var channelIndexStart = that._getChannelIndexFromY(clickYValue);
                 var channelIndices = [ channelIndexStart ];
                 var featureType = that.vars.activeFeatureType;
@@ -3281,12 +3599,10 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
                     Highcharts.removeEvent(document, 'mouseup', drop2);
             
                     var x = e.clientX - container.offsetLeft;
-                    //console.log(that.vars.channelsDealyedNames);
                     that.vars.delayExists = true;
 
                     var newList = [];
                     var delayList = [];
-                // console.log(that._getChannelsDisplayed("PSG Annotation"));
                     that._getChannelsDisplayed().forEach( channel =>
                         {
                             
@@ -3920,7 +4236,8 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
             annotation.metadata.originalData = annotationData;
         }
         if (!that.options.isReadOnly && !annotationData.is_answer) {
-            that._addConfidenceLevelButtonsToAnnotationBox(annotation);
+            //that._addConfidenceLevelButtonsToAnnotationBox(annotation);
+            that._addFeatureTypeButtonsToAnnotationBox(annotation, channelIndices);
             if (!preliminary) {
                 that._addCommentFormToAnnotationBox(annotation);
             }
@@ -3940,7 +4257,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
                 width: 70,
                 height: 25,
                 x: 0,
-                y: 0,
+                y: 30,
                 zIndex: 2,
             })
             .mousedown(function(event) {
@@ -3998,10 +4315,95 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
                     var classString =  $(annotation.group.element).attr('class');
                     classString += ' saved';
                     $(annotation.group.element).attr('class', classString);
-                    that._addCommentFormToAnnotationBox(annotation);
                 })
             buttonGroup.append(button);
         });
+        body.append(buttonGroup);
+        htmlContext.append(body);
+        annotationElement.append(htmlContext);
+    },
+
+    _addFeatureTypeButtonsToAnnotationBox: function(annotation, channelIndices) {
+        console.log(channelIndices)
+        var that = this;
+        var annotations = that.vars.chart.annotations.allItems;
+        var annotationElement = $(annotation.group.element);
+        //set default to empty feature
+        that.vars.activeFeatureType = that.options.features.order[14]
+        // To learn more about the foreignObject tag, see: 
+        // https://developer.mozilla.org/en/docs/Web/SVG/Element/foreignObject
+        var htmlContext = $(document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject'));
+        htmlContext
+            .addClass('type')
+            .attr({
+                // width and hieght set in css
+                width: 350,
+                //width: auto,
+                height: 30,
+                x: 0,
+                y: 0,
+                zIndex: 2,
+            })
+            .mousedown(function(event) {
+                event.stopPropagation();
+            })
+            .click(function(event) {
+                event.stopPropagation();
+            })
+            .dblclick(function(event) {
+                event.stopPropagation();
+            });
+        var body = $(document.createElement('body'))
+            .addClass('toolbar feature-type-buttons')
+            .attr('xmlns', 'http://www.w3.org/1999/xhtml');
+        var buttonGroup = $('<form>')
+        features = that.options.features.options
+
+        console.log(annotation)
+
+        //this will clone the features object.
+        var tempFeatures;
+        tempFeatures = JSON.parse(JSON.stringify(features))
+
+        //removes all features from tempFeatures except the valid ones.
+        for (feat in tempFeatures){
+            if(!tempFeatures[feat].validChannels[that.vars.currentMontage].includes(channelIndices[0])){
+                delete tempFeatures[feat]
+            }
+        }
+
+        for(var featureName of Object.keys(tempFeatures)){
+
+            feature = tempFeatures[featureName]
+
+            var button = $('<div>')
+                .addClass('btn')
+                .addClass(feature.class)
+                .data('featureName', featureName)
+                .html(featureName)
+                .click(function(event) {
+                    var confButtons = $(that.element).find('.confidence-buttons .btn');
+
+                    //make the confidencse button visible. There are hideen with css in style.css
+                    for (var i = 0; i < confButtons.length; i ++) {
+                        confButtons[i].style.visibility = 'visible';
+                    }
+
+                    $(this).addClass('active');
+                    $(this).siblings().removeClass('active');
+
+                    that.vars.activeFeatureType = $(this).data('featureName')
+                    console.log($(this).data('featureName'))
+                    
+                    annotations.filter(a => a.metadata.id == annotation.metadata.id).forEach(a => {
+                        a.metadata.featureType =  $(this).data('featureName')
+                    });
+                    that._addConfidenceLevelButtonsToAnnotationBox(annotation);
+                    $('html').off('mousedown', annotation.outsideClickHandler);
+
+                })
+            buttonGroup.append(button);
+        }
         body.append(buttonGroup);
         htmlContext.append(body);
         annotationElement.append(htmlContext);

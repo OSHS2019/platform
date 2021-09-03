@@ -50,7 +50,7 @@ Meteor.startup(() => {
         }
     }
 
-    const taskName = 'Sleep Staging (Physionet EDFX)24';
+    const taskName = 'Sleep Staging (Physionet EDFX test) 9';
     
     let task = Tasks.findOne({ name: taskName });
     let taskId;
@@ -270,7 +270,7 @@ Meteor.startup(() => {
                     enableMouseTracking: true,
                 },
                 features: {
-                    order: ['sleep_spindle', 'k_complex', 'rem', 'vertex_wave'],
+                    order: ['H1', 'H2', 'OA', 'CA', 'MA', 'ARO', 'desat', 'Arrhythmia', 'Obs', 'Cen', 'Mix', 'Wake Period', 'Sleep Period', 'Empty'],
                     options: {}
                 }
             }
