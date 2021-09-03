@@ -21,6 +21,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         showConfirmationCode: false,
         confirmationCode: undefined,
         recordingName: undefined,
+        allRecordings: undefined,
         defaultMontage: undefined,
         channelsDisplayed: [0, 1, 2, 3, 4, 6, 7],
         channelGains: undefined,
@@ -314,12 +315,15 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
     _create: function() {
         var that = this;
         that._initializeVariables();
+       
+        
         that._keyDownCallback = that._keyDownCallback.bind(that);
         that._reinitChart = that._reinitChart.bind(that);
-        
+       
         $(that.element).addClass(that.vars.uniqueClass);
         that._fetchOptionsFromURLParameter();
         that._createHTMLContent();
+        
         if (that.options.requireConsent) {
             that._showConsentForm();
         }
@@ -341,6 +345,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                 that.options.recordingName = recordingNameFromGetParameter;
             }
             that._setup();
+          
         }
     },
 
@@ -353,6 +358,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
 
     _initializeVariables: function() {
         var that = this;
+        
         that.vars = {
             uniqueClass: that._getUUID(),
             activeFeatureType: 0,
@@ -383,6 +389,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             allChannels: undefined,
             currType: "",
             increaseOnce: 0,
+            indiceInFirst: 5,
             oldIndex: -1,
             currentTrainingWindowIndex: 0,
             cheatSheetOpenedBefore: false,
@@ -438,15 +445,18 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         }
         if (that._getMontages()) {
             that.vars.currentMontage = that.options.defaultMontage || that._getMontages()[0];
+            
         }
         if (that.options.channelGains) {
             that.vars.channelGains = that.options.channelGains;
+           
         }
         else {
             var montages = that._getMontages();
             if (montages) {
                 that.vars.channelGains = {};
                 montages.forEach(function(montage) {
+                   
                     that.vars.channelGains[montage] = that._getChannelsDisplayed(montage).map(function() {
                         return 1.0;
                     });
@@ -963,6 +973,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
     _setupExamplesMode: function() {
         var that = this;
         var examples = that.options.features.examples;
+        console.log(examples);
 
         if (!examples || examples.length == 0) {
             console.log('There are no examples for this viewer.');
@@ -1094,7 +1105,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             var example = that.options.features.examples[that.vars.currentExampleIndex];
             var nextWindowStart = that._getWindowStartForTime(example.start);
         } while (nextWindowStart == that.vars.currentWindowStart);
-        that._switchToWindow(that.options.recordingName, nextWindowStart, that.options.windowSizeInSeconds);
+        that._switchToWindow(that.options.allRecordings, nextWindowStart, that.options.windowSizeInSeconds);
     },
 
     _getMontages: function() {
@@ -1121,6 +1132,23 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             return that.options.channelsDisplayed[that.options.defaultMontage];
         }
         return that.options.channelsDisplayed[that._getMontages()[0]];
+    },
+
+    _getMontageNameFromRecording: function(name) {
+        var that = this; 
+        var parts = name.split("/");
+        var fileName = parts[parts.length - 1];
+        console.log(fileName);
+        if (fileName.indexOf("PSG") > -1 || fileName.indexOf("Psg") > -1 || fileName.indexOf("psg") > -1 ){
+         
+            return "PSG Annotation"
+        }
+        else if(fileName.indexOf("ANNE") > -1 || fileName.indexOf("Anne") > -1 || fileName.indexOf("anne") > -1){
+            
+            return "Anne Annotation"
+
+        }
+
     },
 
     _dealyChannel: function(channelName, amount){
@@ -1317,6 +1345,14 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         return date;
     },
 
+    _getRequiredMontages(){
+        console.log(that.vars);
+        console.log(that._getMontages());
+
+        montages = [];
+        return montages;
+    },
+
     _setupMontageSelector: function() {
         var that = this;
         if (!that._getMontages()) {
@@ -1324,8 +1360,11 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         }
         var selectContainer = $('<div><select></select></div>').appendTo(that.element.find('.montage_panel'));
         var select = selectContainer.find('select');
+       // requiredMontages = that._getRequiredMontages();
+       // rquiredMontages = requiredMontages.filter(montage => that._getMontages().includes(montage));
         that._getMontages().forEach(function(montage) {
             var selectedString = '';
+            console.log(montage);
             if (montage == that.vars.currentMontage) {
                 selectedString = ' selected="selected"';
             }
@@ -1545,6 +1584,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         var channelsDisplayedPerMontage = [];
         if (montages) {
             montages.forEach(function(montage) {
+                console.log(montages);
                 channelsDisplayedPerMontage.push(that._getChannelsDisplayed(montage));
             });
         }
@@ -1642,11 +1682,11 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             that.options.recordingName = that.options.experiment.current_condition.recording_name;
             var initialWindowStart = conditionWindows[currentWindowIndex];
             that.vars.lastActiveWindowStart = initialWindowStart;
-            that._switchToWindow(that.options.recordingName, initialWindowStart, that.options.windowSizeInSeconds);
+            that._switchToWindow(that.options.allRecordings, initialWindowStart, that.options.windowSizeInSeconds);
         }
         else if (that._areTrainingWindowsSpecified()) {
             var trainingWindow = that._getCurrentTrainingWindow();
-            that._switchToWindow(trainingWindow.recordingName, trainingWindow.timeStart, trainingWindow.windowSizeInSeconds);
+            that._switchToWindow(trainingWindow.allRecordings, trainingWindow.timeStart, trainingWindow.windowSizeInSeconds);
         }
         else if (that.options.recordingName) {
             that.vars.lastActiveWindowStart = + that.options.startTime;
@@ -1662,7 +1702,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                     that.vars.lastActiveWindowStart = that.options.startTime;
                 }
             }
-            that._switchToWindow(that.options.recordingName, that.vars.lastActiveWindowStart, that.options.windowSizeInSeconds);
+            that._switchToWindow(that.options.allRecordings, that.vars.lastActiveWindowStart, that.options.windowSizeInSeconds);
         }
         else {
             alert('Could not retrieve user data.');
@@ -2043,7 +2083,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         that._switchToWindow(nextRecordingName, nextWindowStart, nextWindowSizeInSeconds);
     },
 
-    _switchToWindow: function (recording_name, start_time, window_length) {
+    _switchToWindow: function (recording_names, start_time, window_length) {
         var that = this;
         if (!that._isCurrentWindowSpecifiedTrainingWindow()) {
             if (that.options.visibleRegion.start !== undefined) {
@@ -2070,7 +2110,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         }
 
         that.vars.currentWindowStart = start_time;
-        that.vars.currentWindowRecording = recording_name;
+        that.vars.currentWindowRecording = recording_names[0];
         that._updateJumpToClosestDisagreementWindowButtonsEnabledStatus();
 
         if (that._isVisibleRegionDefined()) {
@@ -2122,14 +2162,19 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         //console.log(that.vars.delayAmount);
         //that._setDelay(assign);
         //console.log(that.vars.delayAmount);
+        
+        //recording_names.forEach( recording_name => {
+          //  console.log(recording_name);
+        console.log(that._getChannelsDisplayed());//that._getMontageNameFromRecording(recording_name)));
         windowsToRequest.forEach((windowStartTime) => {
             channelsDelayed = {
                 channelNames: that.vars.channelsDealyedNames,
                 delayAmount: that.vars.delayAmount,
             }
+           
             var options = {
-                recording_name: recording_name,
-                channels_displayed: that._getChannelsDisplayed(),
+                recording_name: recording_names[0],
+                channels_displayed: that._getChannelsDisplayed(that._getMontageNameFromRecording(recording_names[0])),
                 start_time: windowStartTime,
                 delayExists: that.vars.delayExists,
                 channelsDelayed: channelsDelayed,
@@ -2137,9 +2182,18 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                 target_sampling_rate: that.options.targetSamplingRate,
                 use_high_precision_sampling: that.options.useHighPrecisionSampling,
             };
-           
-            that._requestData(options, (data, errorData) => {
-               // console.log(options);
+            var options2 = {
+                recording_name: recording_names[1],
+                channels_displayed: that._getChannelsDisplayed(that._getMontageNameFromRecording(recording_names[1])),
+                start_time: windowStartTime,
+                delayExists: that.vars.delayExists,
+                channelsDelayed: channelsDelayed,
+                window_length: window_length,
+                target_sampling_rate: that.options.targetSamplingRate,
+                use_high_precision_sampling: that.options.useHighPrecisionSampling,
+            };
+            that._requestData(options, options2, (data, errorData) => {
+               console.log(data);
                 var windowAvailable = !errorData;
                 if (windowAvailable && windowStartTime == that.vars.currentWindowStart) {
                     that._applyFrequencyFilters(data, (dataFiltered) => {
@@ -2176,6 +2230,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                 }
             });
         });
+    //});
     }, 
 
     jumpToEpochWithStartTime: function(epochStartTimeInSeconds) {
@@ -2184,7 +2239,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
             console.error('Cannot jump to epoch with start time', epochStartTimeInSeconds);
             return;
         }
-        that._switchToWindow(that.options.recordingName, epochStartTimeInSeconds, that.options.windowSizeInSeconds);
+        that._switchToWindow(that.options.allRecordings, epochStartTimeInSeconds, that.options.windowSizeInSeconds);
     },
 
     getCurrentWindowStartReactive: function() {
@@ -2194,7 +2249,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
 
     _reloadCurrentWindow: function() {
         var that = this;
-        that._switchToWindow(that.options.recordingName, that.vars.currentWindowStart, that.options.windowSizeInSeconds);
+        that._switchToWindow(that.options.allRecordings, that.vars.currentWindowStart, that.options.windowSizeInSeconds);
     },
 
     _reinitChart: function() {
@@ -2232,11 +2287,11 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         var that = this;
         if (!that.vars.lastActiveWindowStart) {
             that.vars.lastActiveWindowStart = 0;
-        }        that._switchToWindow(that.options.recordingName, that.vars.lastActiveWindowStart, that.options.windowSizeInSeconds);
+        }        that._switchToWindow(that.options.allRecordings, that.vars.lastActiveWindowStart, that.options.windowSizeInSeconds);
 
     },
 
-    _requestData: function(options, callback) {
+    _requestData: function(options, options2, callback) {
         
         var that = this;
         var identifierKey = that._getIdentifierKeyForDataRequest(options);
@@ -2281,17 +2336,23 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         const numSecondsToPadBeforeAndAfter = 2;
         
         const optionsPadded = JSON.parse(JSON.stringify(options));
+        const optionsPadded2 = JSON.parse(JSON.stringify(options2));
     
         optionsPadded.start_time -= numSecondsToPadBeforeAndAfter;
        
         optionsPadded.start_time = Math.max(0, optionsPadded.start_time);
-       
-        const numSecondsPaddedBefore = options.start_time - optionsPadded.start_time ;
-        optionsPadded.window_length = options.window_length + numSecondsPaddedBefore + numSecondsToPadBeforeAndAfter;
+        optionsPadded2.start_time -= numSecondsToPadBeforeAndAfter;
 
+        optionsPadded2.start_time = Math.max(0, optionsPadded2.start_time);
+
+        const numSecondsPaddedBefore = options.start_time - optionsPadded.start_time ;
+
+        const numSecondsPaddedBefore2 = options2.start_time - optionsPadded2.start_time ;
+        optionsPadded.window_length = options.window_length + numSecondsPaddedBefore + numSecondsToPadBeforeAndAfter;
+        optionsPadded2.window_length = options2.window_length + numSecondsPaddedBefore2 + numSecondsToPadBeforeAndAfter;
        // console.log("crossed");
         //console.log(that.vars.delayAmount);
-        Meteor.call('get.edf.data', optionsPadded, (error, data) => {
+        Meteor.call('get.edf.data', optionsPadded, optionsPadded2, (error, data) => {
             if (error) {
                 console.log(error.message);
                 callback(null, error.message);
@@ -2322,7 +2383,8 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
     },
 
     _transformData: function(input, numSecondsPaddedBefore, numSecondsDataOfInterest, numSecondsPaddedAfter) {
-       // console.log("inside here");
+
+        console.log(input);
         var that = this;
         var channels = [];
         var options = that.vars.valueOptions;
@@ -2661,7 +2723,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         // if the chart object does not yet exist, because the user is loading the page for the first time
         // or refreshing the page, then it's necessary to initialize the plot area
         if (!that.vars.chart) {
-            //console.log("here")
+           
             // if this is the first pageload, then we'll need to load the entire
             that._initGraph(data);
         // if the plot area has already been initialized, simply update the data displayed using AJAX calls
@@ -2669,6 +2731,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         that._updateChannelDataInSeries(that.vars.chart.series, data);
         that.vars.chart.xAxis[0].setExtremes(that.vars.currentWindowStart, that.vars.currentWindowStart + that.options.windowSizeInSeconds, false, false);
         that.vars.chart.redraw(); // efficiently redraw the entire window in one go
+       
         var chart = that.vars.chart;
         // use the chart start/end so that data and annotations can never
         // get out of synch
@@ -2676,6 +2739,8 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         that._renderChannelSelection();
         that._updateBookmarkCurrentPageButton();
         that.vars.currentWindowStartReactive.set(that.vars.currentWindowStart);
+       
+       // that.vars.chart.series = [that.vars.chart.series,that.vars.chart.series];
     },
 
     _updateChannelDataInSeries: function(series, data) {
@@ -2745,7 +2810,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
         var that = this;
         var channels = data.channels;
         
-        //console.log(that.vars.channelsDealyedNames);
+       
         that.vars.graphID = 'time-series-graph-' + that._getUUID();
         var graph = $(that.element).find('.graph');
         graph.children().remove();
@@ -2894,7 +2959,7 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
                             var startTimeSnapped = Math.round(e.min / that.options.windowSizeInSeconds) * that.options.windowSizeInSeconds;
                             startTimeSnapped = Math.max(0, startTimeSnapped);
                             startTimeSnapped = Math.min(that._getLatestPossibleWindowStartInSeconds(), startTimeSnapped);
-                            that._switchToWindow(that.options.recordingName, startTimeSnapped, that.options.windowSizeInSeconds);
+                            that._switchToWindow(that.options.allRecordings, startTimeSnapped, that.options.windowSizeInSeconds);
                             return false;
                         }
                     }
@@ -2958,123 +3023,79 @@ $.widget('crowdeeg.TimeSeriesAnnotator', {
     var that = this;
    
     var check;
-    //var channel = channels[index];
-    var cid = "channel-" + index;
-    //console.log(channel.name)
-    //console.log(cid);
    
-    //var toggler = $("#channel-"+(index)).on('click', (evt) => {
-        
-        //console.log("button clicked");
-        //console.log($('.popup').id);
-   // $(this).hide();
-     //addClass('<button>click me</button>');
-    // console.log("inside");
-     //console.log(channel.name);
-    //console.log(index);
+    var cid = "channel-" + index;
+   
     var checker = that.vars.oldIndex;
     if(checker > -1){
-     // console.log(checker);
+    
         $("#increase-"+(checker)).css("visibility", "hidden");
         $("#decrease-"+(checker)).css("visibility", "hidden");
         $("#default-"+(checker)).css("visibility", "hidden");
      
         $("#myPopup-"+(checker)).css("visibility", "hidden");
         that.vars.oldIndex = -1;
-        //that._reloadCurrentWindow();
-        //console.log("here");
+       
     }
    var channel = channels[index];
-   //console.log(channel);
+  
     check = that.vars.popUpActive;
     
-   // console.log(that.vars.popUpActive)
+  
     if(check == 1 ){
-        //console.log("here as well");
+     
         $("#myPopup-"+(index)).css("visibility", "visible");
         
         $("#increase-"+(index)).css("visibility", "visible");
         $("#decrease-"+(index)).css("visibility", "visible");
         $("#default-"+(index)).css("visibility", "visible");
        
-      //  console.log("inside it")
+      
      }
      that.vars.popUpActive = 2;
      that.vars.oldIndex =index;
      var increaser = $("#increase-"+(index)).on('click', (evt) => {
-       //  console.log()
+      
        
         name = channel.name;
-       // console.log(name);
-        //var scaleFault = sessionStorage.getItem(name+"scaleFactorAmplitude");
-        //scaleFault = scaleFault*5;
-       // sessionStorage.setItem((name+"scaleFactorAmplitude"), scaleFault);
-
+     
         that.vars.valueOptions = 1;
         that.vars.increaseOnce = 1;
         that.vars.requiredName = name;
         that.vars.reprint = 1;
-       // console.log("inbutton");
+    
         that._reloadCurrentWindow();
-        //location.reload();
-       // scaleFactorAmplitude = scaleFactorAmplitude*scaleFault;
+     
        
 
-//console.log(increase);
+
   });
   
   var decreaser = $("#decrease-"+(index)).on('click', (evt) => {
-    //  console.log()
+ 
      name = channel.name;
-    // console.log(name);
-     //var scaleFault = sessionStorage.getItem(name+"scaleFactorAmplitude");
-     //scaleFault = scaleFault*5;
-    // sessionStorage.setItem((name+"scaleFactorAmplitude"), scaleFault);
-     
+   
     that.vars.valueOptions = -1;
     that.vars.requiredName = name;
     that.vars.increaseOnce = 1;
     that.vars.reprint = 1;
     that._reloadCurrentWindow();
    
-    // scaleFactorAmplitude = scaleFactorAmplitude*scaleFault;
-    
-
-//console.log(increase);
+   
 });
 var defaulter = $("#default-"+(index)).on('click', (evt) => {
-    //  console.log()
+    
     name = channel.name;
-    // console.log(name);
-     //var scaleFault = sessionStorage.getItem(name+"scaleFactorAmplitude");
-     //scaleFault = scaleFault*5;
-    // sessionStorage.setItem((name+"scaleFactorAmplitude"), scaleFault);
     
     that.vars.valueOptions = 0;
     that.vars.requiredName = name;
     that.vars.reprint = 1;
     that._reloadCurrentWindow();
    
-    // scaleFactorAmplitude = scaleFactorAmplitude*scaleFault;
-    
-
-//console.log(increase);
+ 
 });
 
-     //$(".popupbutton").css("visibility", "visible");
-
-    //document.getElementById("myPopup-"+index).classList.toggle("show");
-    //console.log(index);
-     //addClass('<button>click me</button>');
-  //  })
-    //console.log(toggler);
-   /* toggler.addEvent(function(){
-        var popup = document.getElementById("myPopup");
-        popup.classList.toggle("show");
-        console.log("printed");
-
-    });
-    */
+    
     },
 
     _formatXAxisLabel: function() {
@@ -3095,7 +3116,7 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
     _blockGraphInteraction: function() {
         var that = this;
         var container = $(that.element);
-       // console.log(container);
+       
         var graph = $('#' + that.vars.graphID);
         var blocker = $('<div>')
             .addClass('blocker')
@@ -3115,13 +3136,16 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
         $(that.element).find('> .blocker').remove();
     },
 
+    _indiceOneOrTwo(){
+        return 1;
+    },
+
     _setupAnnotationInteraction: function() {
 
         var that = this;
         that._getDelay();
         that.vars.channelsDealyedNames = that._getChannelsDisplayed();
-        //console.log( that._getChannelsDisplayed());
-
+        
         if(that.vars.delayAmount.length == 0){
             that.vars.channelsDealyedNames.forEach(channel => {
                 that.vars.delayAmount.push(0);
@@ -3133,10 +3157,10 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
         }
         else{
             if (that.options.isReadOnly) return;
-         //   console.log(that.options.features.order);
+     
             if (!that.options.features.order || !that.options.features.order.length) return;
             var chart = that.vars.chart;
-        //    console.log(chart);
+       
             var container = chart.container;
 
             function drag(e) {
@@ -3151,7 +3175,7 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
                 var annotationId = undefined;
                 var clickXValue = that._convertPixelsToValue(clickX, 'x');
                 var clickYValue = that._convertPixelsToValue(clickY, 'y');
-              //  console.log(clickXValue);
+              
                 var channelIndexStart = that._getChannelIndexFromY(clickYValue);
                 var channelIndices = [ channelIndexStart ];
                 var featureType = that.vars.activeFeatureType;
@@ -3230,7 +3254,7 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
                 var annotationId = undefined;
                 var clickXValue = that._convertPixelsToValue(clickX, 'x');
                 var clickYValue = that._convertPixelsToValue(clickY, 'y');
-            // console.log(clickXValue);
+         
                 var channelIndexStart = that._getChannelIndexFromY(clickYValue);
                 var channelIndices = [ channelIndexStart ];
                 var featureType = that.vars.activeFeatureType;
@@ -3246,13 +3270,13 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
 
                 function getAnnotationAttributes2(e) {
                     var x = e.clientX - container.offsetLeft,
-                        //dx = x - clickX,
-                        //width = that._convertPixelsToValueLength(parseInt(dx, 10) + 1, 'x'),
                         channelIndices = getAnnotationChannelIndices2(e),
                         { height, yValue } = that._getAnnotationBoxHeightAndYValueForChannelIndices(channelIndices);
-                        channelIndices.forEach(channel => {
-                            that._dealyChannel(that._getChannelsDisplayed()[channel], clickXValue);
-                            //console.log(that._getChannelsDisplayed()[channel]);
+                        
+                        that._getChannelsDisplayed().forEach(channel => {
+                            if(that.indiceType(_getChannelsDisplayed.indexOf(channel)) == that.indiceType(channelIndices[0]))
+                            that._dealyChannel(channel, clickXValue);
+                            
                         });
                         var xValue = that._convertPixelsToValue(clickX, 'x');
                     
@@ -3276,17 +3300,16 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
             
             
                 function drop2(e) {
-                    //console.log("drop2");
+                    
                     Highcharts.removeEvent(document, 'mousemove', step2);
                     Highcharts.removeEvent(document, 'mouseup', drop2);
             
                     var x = e.clientX - container.offsetLeft;
-                    //console.log(that.vars.channelsDealyedNames);
                     that.vars.delayExists = true;
 
                     var newList = [];
                     var delayList = [];
-                // console.log(that._getChannelsDisplayed("PSG Annotation"));
+           
                     that._getChannelsDisplayed().forEach( channel =>
                         {
                             
@@ -3346,8 +3369,7 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
                 annotation = that._addAnnotationChangePoint(annotationId, clickXValue, channelIndices, featureType);
                 
                 
-                //that._addAnnotationChangePoint(annotationId, clickXValue, channelIndices, "");
-
+                
                 function getAnnotationChannelIndices3(e) {
                     var y = e.clientY - container.offsetTop,
                         dragYValue = that._convertPixelsToValue(y, 'y'),
@@ -3357,11 +3379,9 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
 
                 function getAnnotationAttributes3(e) {
                     var x = e.clientX - container.offsetLeft,
-                        //dx = x - clickX,
-                        //width = that._convertPixelsToValueLength(parseInt(dx, 10) + 1, 'x'),
                         channelIndices = getAnnotationChannelIndices3(e),
                         { height, yValue } = that._getAnnotationBoxHeightAndYValueForChannelIndices(channelIndices);
-                    // console.log(height);
+              
                         var xValue = that._convertPixelsToValue(clickX, 'x');
                     
                     return {
@@ -3384,7 +3404,7 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
             
             
                 function drop3(e) {
-                // console.log("drop2");
+               
                     Highcharts.removeEvent(document, 'mousemove', step3);
                     Highcharts.removeEvent(document, 'mouseup', drop3);
                     var x = e.clientX - container.offsetLeft;
@@ -3403,14 +3423,13 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
                         annotation.update(getAnnotationAttributes3(e));
                     }
                     annotation.outsideClickHandler = function() {
-                        //console.log("doing this");
+                        
                         annotation.destroy();
                         $('html').off('mousedown', annotation.outsideClickHandler);
                         
                         that.vars.chart.selectedAnnotation = null;
                     }
-                //  $('html').on('mousedown', annotation.outsideClickHandler);
-
+                
                     
                 }
 
@@ -3429,32 +3448,30 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
                 var clickXValue = that._convertPixelsToValue(clickX, 'x');
                 that.vars.currentAnnotationTime = clickXValue;
                 var clickYValue = that._convertPixelsToValue(clickY, 'y');
-                //console.log(clickXValue);
+                
                 var channelIndexStart = that._getChannelIndexFromY(clickYValue);
                 var channelIndices = [ channelIndexStart ];
                 var featureType = that.vars.activeFeatureType;
 
                 annotation = that._addAnnotationChangePoint(annotationId, clickXValue, channelIndices, featureType);
         
-                //that._addAnnotationChangePoint(annotationId, clickXValue, channelIndices, "");
+                
 
                 function getAnnotationChannelIndices4(e) {
                     var y = e.clientY - container.offsetTop,
                         dragYValue = that._convertPixelsToValue(y, 'y'),
                         channelIndices = that._getChannelsAnnotated(0, that.vars.currentWindowData.channels.length * that.options.graph.channelSpacing -1 );
-                        //console.log(channelIndices);
+                        
                     return channelIndices;
                 }
 
                 function getAnnotationAttributes4(e) {
                     var x = e.clientX - container.offsetLeft,
-                        //dx = x - clickX,
-                        //width = that._convertPixelsToValueLength(parseInt(dx, 10) + 1, 'x'),
                         channelIndices = getAnnotationChannelIndices4(e),
                         { height, yValue } = that._getAnnotationBoxHeightAndYValueForChannelIndices(channelIndices);
                         channelIndices.forEach(channel => {
                             that._dealyChannel(that._getChannelsDisplayed()[channel], clickXValue);
-                            //console.log(that._getChannelsDisplayed()[channel]);
+                          
                         })
                         var xValue = that._convertPixelsToValue(clickX, 'x');
                     
@@ -3478,14 +3495,13 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
             
             
                 function drop4(e) {
-                //   console.log("drop2");
                     Highcharts.removeEvent(document, 'mousemove', step4);
                     Highcharts.removeEvent(document, 'mouseup', drop4);
                     that.vars.delayExists = true;
                     
-                    //console.log(that.vars.delayAmount);
+                   
                     var x = e.clientX - container.offsetLeft;
-                    //console.log(that.vars.channelsDealyedNames);
+                   
                     that._reloadCurrentWindow();
                     if (x == clickX ) {
                         if (annotation && annotation.destroy) {
@@ -3501,13 +3517,13 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
                         annotation.update(getAnnotationAttributes4(e));
                     }
                     annotation.outsideClickHandler = function() {
-                        //console.log("doing this");
+                        
                         annotation.destroy();
                         $('html').off('mousedown', annotation.outsideClickHandler);
                         
                         that.vars.chart.selectedAnnotation = null;
                     }
-                //  $('html').on('mousedown', annotation.outsideClickHandler);
+              
 
                     
                 }
@@ -3516,9 +3532,7 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
            
             
             if( that.options.features.annotationType == "box" ){
-            // Highcharts.removeEvent(container, 'mousedown', drag2);
-                //Highcharts.removeEvent(container, 'mousedown', drag3);
-                //Highcharts.removeEvent(container, 'mousedown', drag4);
+           
                 Highcharts.removeEvent(container, 'mousedown');
                 Highcharts.addEvent(container, 'mousedown', drag);
             }
@@ -3531,21 +3545,18 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
             }
             else if (that.options.features.annotationType == "cpoint" )
             {
-          //      console.log("here");
+        
                 
                 Highcharts.removeEvent(container, 'mousedown');
                 Highcharts.addEvent(container, 'mousedown', drag3);
             }
             else if (that.options.features.annotationType == "tadjust" )
             {
-               // console.log("here as well");
-                //Highcharts.removeEvent(container, 'mousedown', drag2);
-            // Highcharts.removeEvent(container, 'mousedown', drag3);
-            // Highcharts.removeEvent(container, 'mousedown', drag);
+              
             Highcharts.removeEvent(container, 'mousedown');
                 Highcharts.addEvent(container, 'mousedown', drag2);
             }
-            //Highcharts.addEvent(container, 'mousedown', drag);
+          
        
         
         
@@ -3569,7 +3580,7 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
         };
     },
 
-    //removes all box annotations from screen (they still exist in the backend)
+   
     _removeAnnotationBox: function(){
         var that = this;
         if(that.vars.chart){
@@ -3583,99 +3594,9 @@ var defaulter = $("#default-"+(index)).on('click', (evt) => {
 
 
     _addAnnotationChangePoint: function(annotationId, timeStart, channelIndices, featureType, timeEnd, confidence, comment, annotationData) {
-     /*var that = this;
-        var annotations = that.vars.chart.annotations.allItems;
-        if (!Array.isArray(channelIndices)) {
-            channelIndices = [channelIndices];
-        }
-        if (annotations.some(a => 
-                a.metadata.id == annotationId
-                && (
-                    a.metadata.channelIndices == channelIndices
-                    || channelIndices.length == 1 && a.metadata.channelIndices.indexOf(channelIndices[0]) > -1
-                )
-            )
-        ) {
-            return;
-        }
-        var annotationData = annotationData !== undefined ? annotationData : {};
-        var { height, yValue } = that._getAnnotationBoxHeightAndYValueForChannelIndices(channelIndices);
-        var shapeParams = {
-            height: height,
-        }
-        shapeParams.width = 10;
-        shapeParams.fill = 'blue';
-        //shapeParams.stroke = that._getFeatureColor(featureType, annotationData.is_answer);
-        shapeParams.strokeWidth = 0;
-        that.vars.chart.addAnnotation({
-            xValue: timeStart,
-            yValue: yValue,
-           // allowDragX: preliminary,
-            allowDragY: false,
-            anchorX: 'left',
-            anchorY: 'top',
-            shape: {
-                type: 'rect',
-                units: 'values',
-                params: shapeParams,
-            },
-            events: {
-                mouseup: function(event) {
-                    $(this.group.element).find('rect[shape-rendering="crispEdges"]').last().remove();
-                },
-                dblclick: function(event) {
-                    if (that.options.isReadOnly) return;
-                    if (annotationData.is_answer) return;
-                    event.preventDefault();
-                    var xMinFixed = that._getAnnotationXMinFixed(this);
-                    var xMaxFixed = that._getAnnotationXMaxFixed(this);
-                    var annotationId = annotation.metadata.id;
-                    var channelIndices = annotation.metadata.channelIndices;
-                    var channelsDisplayed = that._getChannelsDisplayed();
-                    if (annotation.metadata.originalData) {
-                        channelIndices = annotation.metadata.originalData.channels;
-                        channelsDisplayed = annotation.metadata.originalData.channels_displayed;
-                    }
-                    that._deleteAnnotation(annotationId, that.vars.currentWindowRecording, xMinFixed, xMaxFixed, channelIndices, channelsDisplayed);
-                    annotations.slice().reverse().filter(a => a.metadata.id == annotationId).forEach(a => {
-                        a.destroy();
-                        that.vars.chart.selectedAnnotation = null;
-                    });
-                }
-            }
-        });
-        var annotation = annotations[annotations.length - 1];
-       // var classString = $(annotation.group.element).attr('class');
-       // classString += ' saved';
-        //$(annotation.group.element).attr('class', classString);
-        //$(annotation.group.element).on('mousedown', function(event) {
-       //     event.stopPropagation();
-      //  });
-        annotation.metadata = {
-            id: annotationId,
-            //featureType: featureType,
-            channelIndices: channelIndices,
-            comment: ''
-        }
-        //if (!preliminary) {
-           // annotation.metadata.confidence = confidence;
-            annotation.metadata.comment = "Comment";
-            annotation.metadata.originalData = annotationData;
-       // }
-       /*
-        if (!that.options.isReadOnly && !annotationData.is_answer) {
-            that._addConfidenceLevelButtonsToAnnotationBox(annotation);
-            if (!preliminary) {
-                that._addCommentFormToAnnotationBox(annotation);
-            }
-        }
-        //
-       console.log(annotation.metadata);
-        return annotation;
+    
 
-*/
 
-//console.log("anotater");
 var that = this;
 var annotations = that.vars.chart.annotations.allItems;
 
@@ -3702,16 +3623,15 @@ var shapeParams = {
     height: height,
 }
 if (preliminary) {
-    //console.log("BOM");
+    
     shapeParams.width = 0;
     shapeParams.fill = 'blue';
-    shapeParams.stroke = 'blue';//that._getFeatureColor(featureType, annotationData.is_answer);
-    shapeParams.strokeWidth = 100;
+    shapeParams.stroke = 'blue';
 }
 else {
     shapeParams.width = 200;
     shapeParams.fill = 'blue';
-  // shapeParams.fill = that._getFeatureColor(featureType, annotationData.is_answer, confidence);
+ 
     shapeParams.stroke = 'blue';
     shapeParams.strokeWidth = 0;
 }
@@ -3776,7 +3696,7 @@ that.vars.chart.addAnnotation({
 });
 var annotation = annotations[annotations.length - 1];
 if (!preliminary) {
-   // console.log("inside this");
+  
     var classString = $(annotation.group.element).attr('class');
     classString += ' saved';
     $(annotation.group.element).attr('class', classString);
@@ -3784,7 +3704,7 @@ if (!preliminary) {
 $(annotation.group.element).on('mousedown', function(event) {
     event.stopPropagation();
 });
-//console.log(featureType);
+
 annotation.metadata = {
     id: annotationId,
     featureType: featureType,
@@ -3792,15 +3712,14 @@ annotation.metadata = {
     comment: ''
 }
 
-//console.log(annotation);
+
 if (!preliminary) {
-    //annotation.metadata.confidence = confidence;
+    
     annotation.metadata.comment = comment;
     annotation.metadata.originalData = annotationData;
 }
 
 if (!that.options.isReadOnly && !annotationData.is_answer) {
-   // that._addConfidenceLevelButtonsToAnnotationBox(annotation);
   
     if (!preliminary) {
         that._addCommentFormToAnnotationBox(annotation);
@@ -3814,15 +3733,24 @@ if (!that.options.isReadOnly && !annotationData.is_answer) {
 
 }
 
-//console.log("postTimeOut")
-//console.log(annotation);
+
 return annotation;
     },
+
+_indiceType(indice){
+    that = this;
+    if(that.options.allRecordings.length == 1 || indice <= that.vars.indiceInFirst){
+        return 0;
+    }
+    else{
+        return 1;
+    }
+},
 _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType, timeEnd, confidence, comment, annotationData) {
         var that = this;
-       // console.log("anotater");
+       
         var annotations = that.vars.chart.annotations.allItems;
-        //console.log(annotations);
+       
         if (!Array.isArray(channelIndices)) {
             channelIndices = [channelIndices];
         }
@@ -4185,7 +4113,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
                 annotationFormatted.arbitration = savedAnnotation.arbitration;
                 annotationFormatted.arbitrationRoundNumber = savedAnnotation.arbitrationRoundNumber;
                 annotationFormatted.rationale = savedAnnotation.rationale;
-               // that._displayAnnotations([annotationFormatted]);
+               
             }
         });
     },
@@ -4201,7 +4129,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
         var cacheKey = that._getAnnotationsCacheKey(that.vars.currentWindowRecording, time_start, time_end, false, annotationCategory);
         var annotation = that.vars.annotationsCache[cacheKey] || {};
         
-        //console.log(time_start);
+      
         that._saveAnnotation(annotation.id, that.vars.currentWindowRecording, label, time_start, time_end, channel, confidence, comment, {}, rationale, function(savedAnnotation, error) {
             if (savedAnnotation) {
                 annotationFormatted = savedAnnotation.value;
@@ -4250,7 +4178,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
                     decisionHumanReadable: fullWindowLabelHumanReadable,
                 });
                 let rationaleFormView;
-               // console.log("here is reached");
+              
                 swal({
                     title: title,
                     confirmButtonText: 'Submit',
@@ -4292,7 +4220,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
             }
         }
         else {
-           // console.log("wtc");
+          
             that._saveFullWindowLabel('SLEEP_STAGE', type);            
         }
     },
@@ -4748,8 +4676,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
 
         
         assign = assigns[0];
-        //console.log(assign.getchannelsDelayedAmount());
-     //   console.log(assign.channelsDelayed);
+      
         if(assign.channelsDelayed){
             that.vars.delayAmount = assign.channelsDelayed.split(",");
             that.vars.channelsDealyedNames = that._getChannelsDisplayed();
@@ -4758,20 +4685,6 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
             that.vars.delayAmount = [];
         }
     
-        //console.log(that.vars.delayAmount);
-        //Data.find({
-            //_id: that.options.context.data._id
-        //})
-        //var delayString ="";
-       // that.vars.delayAmount.forEach( channelAmount =>{
-            //delayString = delayString + channelAmount + ",";
-
-        //})
-        //console.log(assign);
-       //console.log(delayString);
-        //assign._dealyChannels(delayString)
-
-
           
       
 
@@ -4804,25 +4717,14 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
 
         
         assign = that._getCurrAssignment();
-        //assigns[0];
        
-       // console.log(assign);
         var delayString ="";
         that.vars.delayAmount.forEach( channelAmount =>{
             delayString = delayString + channelAmount + ",";
         });
         delayString = delayString.substring(0,delayString.length-1);
         assign.delayChannels(delayString);
-        //Data.find({
-            //_id: that.options.context.data._id
-        //})
-       
-        //})
-       //console.log(assign.channelsDelayed);
-        //console.log(assign);
-       //console.log(delayString);
-        //assign._dealyChannels(delayString);
-
+      
           
       
 
@@ -4875,10 +4777,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
 
         if (Roles.userIsInRole(Meteor.userId(), 'admin')) {
             if (that.options.features.showAllBoxAnnotations == "all") {
-           //     console.log("inside annotate");
-                //grab annotations from all users
-                //console.log(that.options.context.data._id);
-               // console.log(that.options.context.assignment._id);
+          
                 annotations = Annotations.find({
                     assignment: that.options.context.assignment._id,
                     data: that.options.context.data._id,
@@ -4888,7 +4787,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
                 }).fetch();
                 
             } else if (that.options.features.showAllBoxAnnotations == "my") {
-                //grab annotations from this current admin user
+                
                 annotations = Annotations.find({
                     assignment: that.options.context.assignment._id,
                     data: that.options.context.data._id,
@@ -5139,8 +5038,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
             });
 
             channelIndicesMapped.sort().reverse().forEach((channelIndexMapped) => {
-               // console.log("inside thids")
-               //console.log(channelIndexMapped);
+             
              
                if(!end_time){
                    
@@ -5157,8 +5055,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
                 
                }
                else{
-                  //annotation = that._addAnnotationBox(annotationId, start_time, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], that.vars.activeFeatureType);
-                that._addAnnotationBox(annotationId, start_time, channelIndexMapped, type, end_time, confidence, comment, annotation);
+                  that._addAnnotationBox(annotationId, start_time, channelIndexMapped, type, end_time, confidence, comment, annotation);
                }
     
             });
@@ -5185,11 +5082,11 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
         if (channels && !channels.length) {
             channels = [ channels ];
         }
-    //    console.log(metadata);
+   
         const context = that.options.context;
-      //  console.log(annotationId);
+      
         if (!annotationId) {
-           // console.log("nZ");
+         
             var graph = $(that.element).find('.graph');
             var annotationDocument = {
                 assignment: that.options.context.assignment._id,
@@ -5253,7 +5150,7 @@ _addAnnotationBox: function(annotationId, timeStart, channelIndices, featureType
                     return;
                 }
                 var annotationDocument = Annotations.findOne(annotationId);
-              //  console.log(annotationDocument);
+              
                 annotationDocument.id = annotationDocument._id;
                 updateCache(annotationDocument);
             });
