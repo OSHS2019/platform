@@ -55,22 +55,45 @@ Router.route('/assignment/:_id', {
             this.redirect('home');
             return;
         }
-        const data = Data.findOne(assignment.data);
+        var data = Data.findOne(assignment.data);
+        const data2 = Data.findOne(assignment.data2);
         const task = Tasks.findOne(assignment.task);
         const annotations = Annotations.find({ assignment: assignmentId }).fetch();
-        let preferences = Preferences.findOne({ assignment: assignmentId, user: Meteor.userId() }, { reactive: false });
+        var preferences = Preferences.findOne({ assignment: assignmentId, user: Meteor.userId() }, { reactive: false });
         if (!preferences) {
             const preferencesId = Preferences.insert({
                 assignment: assignment._id,
                 user: Meteor.userId(),
                 data: assignment.data,
+                //data2: assignment.data2,
                 annotatorConfig: {},
             });
             preferences = Preferences.findOne({ assignment: assignmentId, user: Meteor.userId() }, { reactive: false })
         }
         this.render('Assignment', {
+            data: { assignment, data, data2, task, annotations, preferences },
+            //data2 : { assignment, data2, task, annotations, preferences },
+        });    
+        /*   
+        data = Data.findOne(assignment.data2);
+        preferences = Preferences.findOne({ assignment: assignmentId, user: Meteor.userId() }, { reactive: false });
+        if (!preferences) {
+            const preferencesId = Preferences.insert({
+                assignment: assignment._id,
+                user: Meteor.userId(),
+                data: assignment.data2,
+                //data2: assignment.data2,
+                annotatorConfig: {},
+            });
+            preferences = Preferences.findOne({ assignment: assignmentId, user: Meteor.userId() }, { reactive: false })
+        }
+
+        this.render('Assignment', {
             data: { assignment, data, task, annotations, preferences },
-        });
+            //data2 : { assignment, data2, task, annotations, preferences },
+            
+        });    
+        */
     }
 });
 

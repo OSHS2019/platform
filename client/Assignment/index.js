@@ -56,7 +56,6 @@ Template.Assignment.onRendered(function() {
     const data = this.data;
     Session.set('numPendingItemsToSave', 0);    
     Meteor.call('updateAssignmentWithoutHook', data.assignment._id, { $set: { status: 'In Progress' } });
-
     let messageToDisplayBeforeStart = data.assignment.messageToDisplayBeforeStart;
     let messageDisplayedBeforeStart;
     if (messageToDisplayBeforeStart) {

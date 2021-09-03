@@ -684,8 +684,21 @@ Schemas.Assignments = new SimpleSchema({
         optional: true,
     }),
     data: SchemaHelpers.fromCollection(Data, {
-        optional: true,
+       optional: true,
     }),
+    data2: SchemaHelpers.fromCollection(Data, {
+        optional: true,
+     }),
+    /*
+    dataFiles: {
+        type: Array,
+        label: 'Data file',
+        minCount: 0,
+        optional: true,
+
+    },
+    'dataFiles.$': SchemaHelpers.fromCollection(Data),
+    */
     name: {
         type: String,
         label: 'Name',
@@ -787,6 +800,10 @@ Assignments.helpers({
   dataDoc() {
     return Data.findOne(this.data) || false;
   },
+  dataDoc2() {
+    return Data.findOne(this.data) || false;
+  },
+
   patientDoc() {
     const data = this.dataDoc();
     if (!data) return false;
@@ -832,13 +849,28 @@ Assignments.helpers({
     if (!data) return 'Loading ...';
     return data.path;
   },
+  dataPath2() {
+    const data = this.dataDoc2();
+    if (!data) return 'Loading ...';
+    return data.path;
+  },
   dataLengthInSeconds() {
     const data = this.dataDoc();
     if (!data) return 'Loading ...';
     return data.lengthInSeconds();
   },
+  dataLengthInSeconds2() {
+    const data = this.dataDoc2();
+    if (!data) return 'Loading ...';
+    return data.lengthInSeconds();
+  },
   dataLengthFormatted() {
     const data = this.dataDoc();
+    if (!data) return 'Loading ...';
+    return data.lengthFormatted();
+  },
+  dataLengthFormatted2() {
+    const data = this.dataDoc2();
     if (!data) return 'Loading ...';
     return data.lengthFormatted();
   },

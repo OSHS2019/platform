@@ -20,7 +20,7 @@ const userAccounts = {
 }
 const rootUser = userAccounts['ADMIN'];
 const testUser = userAccounts['TEST'];
-console.log("here");
+
 const recordingPaths = [
    //'/physionet/edfx/SC4001E0-PSG.edf',
     '/physionet/edfx/200930_761428_ANNE.edf',
@@ -50,7 +50,7 @@ Meteor.startup(() => {
         }
     }
 
-    const taskName = 'Sleep Staging (Physionet EDFX)24';
+    const taskName = 'Sleep Staging (Physionet EDFX)28';
     
     let task = Tasks.findOne({ name: taskName });
     let taskId;
@@ -67,7 +67,7 @@ Meteor.startup(() => {
             allowedDataTypes: ['EDF'],
             annotator: 'EDF',
             annotatorConfig: {
-                defaultMontage: 'PSG Annotation',
+                defaultMontage: 'Psg + Anne',
                 channelsDisplayed: {
                     'Show all Signals': [
                        // "'Pleth'",
@@ -86,17 +86,39 @@ Meteor.startup(() => {
                         //'pcg',
 //
                     ],
-                    'EEG + EOG + Chin EMG': [
-                        '0', // EEG Fpz-Cz
-                        '1', // EEG Pz-Oz
-                        '5',
-                        //'3',
-                        //'2',
-                        //'4',
-                        //'5',
-                        //'6',
-                        //'7',
-                        //'8',
+                    'PSG + Anne Annotation': [
+                        "'ECG'",
+                        "'Pleth'",
+                        "'Accl Pitch'",
+                        "'Accl Roll'",
+                        "'Resp Effort'",
+                        "'PAT(ms)'",
+                        "'PR(bpm)'",
+                        //"'PAT_resp'",
+                        "'Snore'",
+                        //"'PAT_trend'",
+                        "'PI(%)'",
+                        "'HR(bpm)'",
+                        "'RR(rpm)'",
+                        "'SpO2(%)'",
+                       "'Chest Temp(A C)'",
+                        "'Limb Temp(A C)'",
+                        "'F4-A1'",
+                        "'C4-A1'",
+                        "'O2-A1'",
+                        "'LOC-A2'",
+                        "'ROC-A1'",
+                        "'Chin 1-Chin 2'",
+                        "'ECG'",
+                        "'Leg/L'",
+                        "'Leg/R'",
+                        "'Snore'",
+                        "'Airflow'",
+                        "'Nasal Pressure'",
+                        "'Thor'",
+                        "'Abdo'",
+                        "'SpO2'",
+                    
 
                     ],
                     'PSG Annotation':[
@@ -135,6 +157,8 @@ Meteor.startup(() => {
                        "'Chest Temp(A C)'",
                         "'Limb Temp(A C)'",
                                             ]
+                    
+
 
                 },
                 channelGains: {
@@ -179,6 +203,38 @@ Meteor.startup(() => {
 
                     ],
                     "Anne Annotation": [
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1
+   
+                       ],
+                       "PSG + Anne Annotation": [
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
                         1,
                         1,
                         1,
@@ -321,7 +377,49 @@ Meteor.startup(() => {
         console.log(metadata.wfdbdesc.Groups[0]);
     });
 
-    recordingPaths.forEach((recordingPath) => {
+    if(recordingPaths.length > 1){
+
+        const recordingPathParts = recordingPaths[0].split('/');
+        const recordingFilename = recordingPathParts[recordingPathParts.length - 1];
+
+        const recordingPathParts2 = recordingPaths[1].split('/');
+        const recordingFilename2 = recordingPathParts2[recordingPathParts2.length - 1];
+
+        let data = Data.findOne({
+            name: recordingFilename,
+            type: 'EDF',
+            path: recordingPaths[0],
+        });
+        let data2 =Data.findOne({
+            name: recordingFilename2,
+            type: 'EDF',
+            path: recordingPaths[1],
+        });
+        if (!data || !data2) return;
+
+        assignment = Assignments.findOne({
+            users: testUser._id,
+            task: taskId,
+            data: data._id,
+            data2: data2._id
+        });
+        if (!assignment) {
+            const assignmentId = Assignments.insert({
+                users: [ testUser._id ],
+                task: taskId,
+                data: data._id,
+                data2: data2._id,
+                status: 'Pending',
+                channelsDelayed: '',
+            });
+            console.log('Created Assignment for Task "' + task.name + '", User "' + testUser.email + '" and Data "' + data.name + 'and' + data2.name+'" (' + assignmentId + ')');
+        }
+
+
+    }
+    else
+    {
+        recordingPaths.forEach((recordingPath) => {
         const recordingPathParts = recordingPath.split('/');
         const recordingFilename = recordingPathParts[recordingPathParts.length - 1];
         let data = Data.findOne({
@@ -346,5 +444,5 @@ Meteor.startup(() => {
             });
             console.log('Created Assignment for Task "' + task.name + '", User "' + testUser.email + '" and Data "' + data.name + '" (' + assignmentId + ')');
         }
-    });
+    })}
 });

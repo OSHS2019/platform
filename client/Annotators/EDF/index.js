@@ -49,11 +49,13 @@ Template.AnnotatorEDF.onCreated(function() {
 Template.AnnotatorEDF.onRendered(function() {
     const annotatorContainer = $(this.find('.annotator-container'));
     const template = this;
+    console.log(this);
     let config = $.extend({}, this.data.task.annotatorConfig);
     config = $.extend(config, this.data.preferences.annotatorConfig);
     config = $.extend(config, {
         recordingName: this.data.data.path,
         context: this.data,
+        allRecordings: [this.data.data.path, this.data.data2.path],
         setVisibilityStatusForInfoPanel: (isVisible) => {
             setVisibilityStatusForFloatingPanel(isVisible, template, '.info-panel-container');
         },
@@ -62,6 +64,8 @@ Template.AnnotatorEDF.onRendered(function() {
         },
     });
     annotatorContainer.TimeSeriesAnnotator(config);
+
+    
 });
 
 Template.AnnotatorEDF.onDestroyed(function() {
