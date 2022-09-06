@@ -586,6 +586,7 @@ Template.Data.helpers({
     },
 });
 
+
 Template.Data.events({
     'change .data .reactive-table tbody input[type="checkbox"].select-data': function (event, template) {
         const target = $(event.target);
@@ -642,14 +643,8 @@ Template.Data.events({
         console.log(file_name);
         Patients.remove({_id:patient_id});
         Data.remove(dataId);
-        let p = new Promise ((resolve,reject)=>{
-            Meteor.call("removeEDFFile",file_name,(error,results)=>{
-                if (error){
-                    throw new Error(error);
-                }
-                return resolve(results);
-            });
-            
+        EDFFile.then(result=>{
+            result.findOne({fileName:file_name}).remove();;
         })
         
         }

@@ -380,6 +380,11 @@ Schemas.Data = new SimpleSchema({
     // SchemaHelpers.fromCollection(Patients, {
     //     optional: true,
     // }),
+    edf_file_id: {
+        type:String,
+        label: 'edf_file_id',
+        optional: true,
+    },
     path: {
         type: String,
         label: 'Path',
@@ -2510,7 +2515,7 @@ exports.EDFFile = env_p.then(result =>{
         const EDFFile = new FilesCollection({
             debug: true,
             collectionName: 'EDFFile',
-            allowClientCode: false, // Disallow remove files from Client
+            allowClientCode: true, // Disallow remove files from Client
             storagePath: edf_dir + '/uploaded'//'/home/youngjae/platform/galaxy-app/edf/uploaded/'
         });
 
