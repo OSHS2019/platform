@@ -12,6 +12,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
   options: {
     optionsURLParameter: "annotatorOptions",
+    dynamic_scaling: false,
     y_axis_limited: false,
     y_limit_lower: undefined,
     y_limit_upper: undefined,
@@ -718,6 +719,10 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
                   <option value= "20">Y-AXIS-UPPER-LIMIT:90</option>\
                   <option value= "21">Y-AXIS-UPPER-LIMIT:100</option>\
                   </select>\
+                </div>\
+                <div style = "margin-bottom: 10px" class = "dynamic_scaling_toggle_container">\
+                <input type="checkbox" id="dynamic-scale-toggle">\
+                <label for="dynamic-scale-toggle">Dynamic Scaling</label><br>\
                 </div>\
               </div>\
                 <div class="graph_control"> \
@@ -4131,8 +4136,19 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       that.vars.chart.annotations.allItems.forEach(annotation => {that._updateControlPoint(annotation)});
       
     });
-    
-    
+
+    $(that.element).find("#dynamic-scale-toggle").click(function(){
+      var checkBox = document.getElementById("dynamic-scale-toggle");
+      if(checkBox.checked == true){
+        that.options.dynamic_scaling = true;
+        that._scaleAllToScreen();
+        that.vars.chart.redraw();
+      }
+
+      if(checkBox.checked == false){
+        that.options.dynamic_scaling = false;
+      }
+    })
     // sets the min and max values for the chart
     that.vars.chart.xAxis[0].setExtremes(
       that.vars.currentWindowStart,
@@ -4206,6 +4222,11 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         that.vars.chart.series[i].yData = newyData;
         that.vars.chart.series[i].xData = newXData;
       }
+      that.vars.chart.redraw();
+    }
+
+    if(that.options.dynamic_scaling){
+      that._scaleAllToScreen();
       that.vars.chart.redraw();
     }
   },
