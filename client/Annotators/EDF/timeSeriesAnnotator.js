@@ -12,6 +12,8 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
   options: {
     optionsURLParameter: "annotatorOptions",
+    o2_na: undefined,
+    o2_index: undefined,
     y_axis_limited: false,
     y_limit_lower: undefined,
     y_limit_upper: undefined,
@@ -3518,7 +3520,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       //console.log("edf.data", data);
       if (!that._isDataValid(data)) {
         that.vars.windowsCache[identifierKey] = false;
-
+        console.log(data);
         if (callback) {
           callback(null, noDataError);
         }
@@ -3563,6 +3565,8 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     // console.log("samplingRate", samplingRate);
     // console.log(that.options.targetSamplingRate);
     // for each dataId in the channelvalues array
+    var indexOfO2 = 0;
+    var i = 0;
     for (var dataId in input.channel_values) {
       // console.log(that._getCurrentMontage());
       //console.log(
@@ -3570,6 +3574,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       // );
       for (var name in input.channel_values[dataId]) {
         var values = input.channel_values[dataId][name];
+        index_of_127 = values.indexOf(127);
         // console.log("Channel Name:" + name);
         // console.log(values);
         ////console.log(that.vars.audioContextSampleRate);
@@ -3627,7 +3632,6 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             values = values.map((v) => v + avg);
           }
         }
-
         if (scaleFactorAmplitude != 0) {
           //  //console.log(name);
           // gets every value and divides it by the scaleFactorAmplitude, the max value in the values array
@@ -3637,7 +3641,10 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
           valuesScaled = values.map((v) => v / scaleFactorAmplitude);
           // //console.log(valuesScaled);
         }
-
+        if(index_of_127 != -1){
+          that.options.o2_na = valuesScaled[index_of_127];
+          that.options.o2_index = i;
+        }
         // console.log(valuesScaled);
         audioBuffer.copyToChannel(valuesScaled, 0, 0);
 
@@ -3856,6 +3863,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
           dataOfInterest: numSamplesDataOfInterest,
           paddedAfter: numSamplesPaddedAfter,
         };
+        i++;
       }
     }
 
@@ -3911,6 +3919,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         that.vars.audioContextSampleRate
       );
       var valuesFiltered = data.channels[c].valuesFilteredHolder;
+      console.log(valuesFiltered);
       var bufferSource = offlineCtx.createBufferSource();
       bufferSource.buffer = buffer;
       var currentNode = bufferSource;
@@ -4014,7 +4023,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
   _populateGraph: function (data) {
     /* plot all of the points to the chart */
     var that = this;
-
+    console.log(data);
     // if the chart object does not yet exist, because the user is loading the page for the first time
     // or refreshing the page, then it's necessary to initialize the plot area
     if (!that.vars.chart) {
@@ -4216,6 +4225,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
   },
 
   _updateChannelDataInSeries: function (series, data) {
+    console.log(data);
     var that = this;
     var channels = data.channels; // gets the channels from the data object
 
@@ -4256,15 +4266,24 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       var seriesData = xValues.map(function (x, i) {
         return [x, samplesScaledAndOffset[i]];
       });
-
+      
       // adds the offset needed to the start of the graph
       seriesData.unshift([-that.vars.xAxisScaleInSeconds, offsetPostScale]);
-
       // adds the offset needed to the end of the graphID
       seriesData.push([recordingEndInSecondsSnapped, offsetPostScale]);
 
       // stores in the series that we input into the funciton, at index c
+      console.log(that.options.o2_na);
       series[c].setData(seriesData, false, false, false);
+      if (c == that.options.o2_index){
+        for (let i =0;i< series[c].yData.length;i++){
+          if(data.channels[c].valuesPadded[i] == that.options.o2_na){
+            series[c].yData[i] = {y: series[c].yData[i],
+              color:'#FFFFFF'}
+          }
+          
+        }
+      }
     });
   },
 
