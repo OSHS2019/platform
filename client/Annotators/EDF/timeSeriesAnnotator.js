@@ -214,6 +214,10 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             name: "Start of File (offset)",
             value: "offset",
           },
+          {
+            name: "Toggle Unalignable",
+            value: "unalignable",
+          }
         ],
       },
     ],
@@ -510,6 +514,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       crosshairMode: false,
       crosshairPosition: [],
       crosshair: undefined,
+      timeSyncInfoElement: undefined,
       recordingMetadata: {},
       recordingLengthInSeconds: 0,
       numberOfAnnotationsInCurrentWindow: 0,
@@ -2408,6 +2413,11 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     return that.vars.timeSyncMode === "notimelock";
   },
 
+  _isInToggleUnalignableMode: function () {
+    var that = this;
+    return that.vars.timeSyncMode === "unalignable";
+  },
+
   _toggleNoTimelockScroll: function (toggle) {
     var that = this;
     var chart = that.vars.chart;
@@ -2417,6 +2427,9 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       let channelIndex = that.vars.selectedChannelIndex;
       if (channelIndex !== undefined) {
         let modifiedDataId = chart.series[channelIndex].options.custom.dataId;
+
+        if (!that._isChannelAlignable(modifiedDataId)) return;
+
         let timeshift = that.vars.channelTimeshift[modifiedDataId];
         timeshift = timeshift ? timeshift + dist : dist;
         let recordingLength =
@@ -2448,10 +2461,12 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       case "crosshair":
         $(".timesync").prop("disabled", false);
         that._toggleNoTimelockScroll(false);
+        that._displayTimeSyncInfo();
         that._displayCrosshair(that.vars.crosshairPosition);
         break;
       case "notimelock":
         $(".timesync").prop("disabled", true);
+        that._displayTimeSyncInfo();
         that._destroyCrosshair();
         that._toggleNoTimelockScroll(true);
         $(".time_sync").text("");
@@ -2460,12 +2475,20 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       case "offset":
         // $(".time_sync").text("");
         $(".timesync").prop("disabled", false);
+        that._displayTimeSyncInfo();
+        that._toggleNoTimelockScroll(false);
+        that._destroyCrosshair();
+        break;
+      case "unalignable":
+        $(".timesync").prop("disabled", true);
+        that._displayTimeSyncInfo();
         that._toggleNoTimelockScroll(false);
         that._destroyCrosshair();
         break;
       case "undefined":
       default:
         $(".timesync").prop("disabled", true);
+        that._destroyTimeSyncInfo();
         that._toggleNoTimelockScroll(false);
         that._destroyCrosshair();
         break;
@@ -2488,7 +2511,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     var that = this;
     let crosshairPosition = that.vars.crosshairPosition;
     let ids = crosshairPosition.map((rec) => rec.dataId);
-    let currentDiff = ids.map((id) => that.vars.channelTimeshift[id]);
+    let currentDiff = ids.map((id) => that._isChannelAlignable(id) ? that.vars.channelTimeshift[id] : 0);
     if (crosshairPosition.length === 2 || diff) {
       // calculate the difference between two recordings after adding the current difference
       if (!diff) {
@@ -2650,6 +2673,31 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     );
   },
 
+  _getDataYBounds: function (dataId) {
+    var that = this;
+    let chart = that.vars.chart;
+    let height = chart.plotHeight;
+    let heightPerChannel =
+      height / that.vars.currentWindowData.channels.length;
+    let firstIndexOfChannel = undefined;
+    let lastIndexOfChannel = undefined;
+    chart.series.forEach((channel, i) => {
+      if (
+        channel.options.custom.dataId === dataId &&
+        channel.points.length
+      ) {
+        if (typeof firstIndexOfChannel === "undefined") {
+          firstIndexOfChannel = i;
+        }
+        lastIndexOfChannel = i;
+      }
+    });
+    let dataTop = firstIndexOfChannel * heightPerChannel;
+    let dataBottom = (lastIndexOfChannel + 1) * heightPerChannel;
+
+    return { dataTop, dataBottom };
+  },
+
   _displayCrosshair: function (crosshairPosition) {
     var that = this;
     that._destroyCrosshair();
@@ -2660,32 +2708,15 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       if (!that._isInCrosshairWindow(crosshair)) return;
       let left = chart.plotLeft;
       let top = chart.plotTop;
-      let height = chart.plotHeight;
-      let heightPerChannel =
-        height / that.vars.currentWindowData.channels.length;
-      let firstIndexOfChannel = undefined;
-      let lastIndexOfChannel = undefined;
-      chart.series.forEach((channel, i) => {
-        if (
-          channel.options.custom.dataId === crosshair.dataId &&
-          channel.points.length
-        ) {
-          if (typeof firstIndexOfChannel === "undefined") {
-            firstIndexOfChannel = i;
-          }
-          lastIndexOfChannel = i;
-        }
-      });
-      let crosshairTop = firstIndexOfChannel * heightPerChannel;
-      let crosshairBottom = (lastIndexOfChannel + 1) * heightPerChannel;
+      let { dataTop, dataBottom } = that._getDataYBounds(crosshair.dataId);
       // draw the crosshair using svgPath and add it as a highchart SVGElement
       let svgPath = [
         "M",
         left + crosshair.plotX,
-        top + crosshairTop,
+        top + dataTop,
         "L",
         left + crosshair.plotX,
-        top + crosshairBottom,
+        top + dataBottom,
       ];
       chart.renderer
         .path(svgPath)
@@ -2694,6 +2725,47 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
           stroke: "blue",
         })
         .add(that.vars.crosshair);
+    });
+  },
+
+  _destroyTimeSyncInfo: function () {
+    var that = this;
+
+    if (that.vars.timeSyncInfoElement) {
+      that.vars.timeSyncInfoElement.destroy();
+      that.vars.timeSyncInfoElement = undefined;
+    }
+  },
+
+  _displayTimeSyncInfo: function () {
+    var that = this;
+    let chart = that.vars.chart;
+
+    that._destroyTimeSyncInfo();
+    that.vars.timeSyncInfoElement = chart.renderer.g().add();
+
+    Object.keys(that.vars.channelTimeshift).forEach((channel) => {
+      if (!that._isChannelAlignable(channel)) {
+        let left = chart.plotLeft;
+        let top = chart.plotTop;
+        let { dataTop, dataBottom } = that._getDataYBounds(channel);
+        // draw a bar using svgPath and add it as a highchart SVGElement
+        let svgPath = [
+          "M",
+          left + 2,
+          top + dataTop,
+          "L",
+          left + 2,
+          top + dataBottom,
+        ];
+        chart.renderer
+          .path(svgPath)
+          .attr({
+            "stroke-width": 4,
+            stroke: "red",
+          })
+          .add(that.vars.timeSyncInfoElement);
+      }
     });
   },
 
@@ -2762,12 +2834,15 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     // console.log(that._isFromPSG(point.dataId));
 
     if (!that._isInCrosshairSyncMode()) return;
-
-    // if (
-    //   that.vars.crosshairPosition.length === 0 &&
-    //   !that._isFromPSG(point.dataId)
-    // )
-    //   return;
+    if (!that._isChannelAlignable(point.dataId)) {
+      that._renderAlignmentAlert("That channel is unalignable.");
+      return;
+    }
+      // if (
+      //   that.vars.crosshairPosition.length === 0 &&
+      //   !that._isFromPSG(point.dataId)
+      // )
+      //   return;
     let crosshairPosition = that.vars.crosshairPosition;
     let sameRecording = false;
     let index = undefined;
@@ -4096,6 +4171,20 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     return true;
   },
 
+  _isChannelAlignable(channel) {
+    var that = this;
+    return that.vars.channelTimeshift[channel] !== "unalignable";
+  },
+
+  _toggleChannelUnalignable(channel) {
+    var that = this;
+    that.vars.channelTimeshift[channel] = that.vars.channelTimeshift[channel] === "unalignable" ? 0 : "unalignable";
+    that._savePreferences({
+      channelTimeshift: that.vars.channelTimeshift,
+    });
+    that._displayTimeSyncInfo();
+  },
+
   // Shifts the yData based on a given distance when computing top, middle or bottom alignment
   _alignYData: function (index, distance) {
     var that = this;
@@ -4773,6 +4862,9 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
                   that.vars.annotationCrosshairCurrPosition = ({ ...crosshairPosition });
                   that._setCrosshair(crosshairPosition);
 
+                  if (that._isInToggleUnalignableMode()) {
+                    that._toggleChannelUnalignable(crosshairPosition.dataId);
+                  }
                 },
                 // workaround to trigger click event handler on point under boost mode
                 // https://github.com/highcharts/highcharts/issues/14067
@@ -5028,7 +5120,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     return h + ":" + (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s); //zero padding on minutes and seconds
   },
 
-  _renderAlignmentAlert: function () {
+  _renderAlignmentAlert: function (alertPrefix) {
     //create an alignment alert, alerting user to click psg first, red border
     //disable it and enable when psg is clicked
 
@@ -5040,12 +5132,12 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       return;
     }
 
-    let alertText;
+    let alertText = alertPrefix ? alertPrefix + " " : "";
 
     if (that.vars.crosshairPosition.length === 0) {
-      alertText = "Please click on the bottom montage to align the graph.";
+      alertText += "Please click on the bottom montage to align the graph.";
     } else {
-      alertText = "Please click on the other montage to align the graph.";
+      alertText += "Please click on the other montage to align the graph.";
     }
 
     alert.show();
@@ -9819,10 +9911,21 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             const text = e.target.result;
             console.log(text);
             const data = JSON.parse(text);
-            diff = data[Object.keys(data)[0]];
-            that._performOffsetSync();
-            that._performCrosshairSync(diff);
+            let dataIds = that.vars.currentWindowData.channels.reduce((ids, channel) => {
+              if (!ids.includes(channel.dataId)) {
+                ids.push(channel.dataId);
+              }
+
+              return ids;
+            }, []);
+            let channelTimeshift = Object.keys(data).filter((key) => dataIds.includes(key)).reduce((obj, key) => {
+              obj[key] = data[key];
+              return obj;
+            }, {});
+            that.vars.channelTimeshift = channelTimeshift;
+
             alignmentLoaded = true;
+            that._reloadCurrentWindow();
           }
           // else {
           //   console.log("initiating file upload");
