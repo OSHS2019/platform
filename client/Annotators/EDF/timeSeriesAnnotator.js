@@ -2398,6 +2398,10 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     return;
   },
 
+  _isInNoSyncMode: function () {
+    return !that.vars.timeSyncMode;
+  },
+
   _isInCrosshairSyncMode: function () {
     var that = this;
     return that.vars.timeSyncMode === "crosshair";
@@ -2428,16 +2432,16 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       if (channelIndex !== undefined) {
         let modifiedDataId = chart.series[channelIndex].options.custom.dataId;
 
-        if (!that._isChannelAlignable(modifiedDataId)) return;
-
-        let timeshift = that.vars.channelTimeshift[modifiedDataId];
+        let timeshift = that._getChannelTimeshift(modifiedDataId);
         timeshift = timeshift ? timeshift + dist : dist;
         let recordingLength =
           that.vars.recordingMetadata[modifiedDataId].LengthInSeconds;
-        that.vars.channelTimeshift[modifiedDataId] = Math.min(
+        if (!that._setChannelTimeshift(modifiedDataId, Math.min(
           recordingLength,
           Math.max(0, timeshift)
-        );
+        ))) {
+          return;
+        }
         // that.vars.reprint = 1;
         that._savePreferences({
           channelTimeshift: that.vars.channelTimeshift,
@@ -2511,7 +2515,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     var that = this;
     let crosshairPosition = that.vars.crosshairPosition;
     let ids = crosshairPosition.map((rec) => rec.dataId);
-    let currentDiff = ids.map((id) => that._isChannelAlignable(id) ? that.vars.channelTimeshift[id] : 0);
+    let currentDiff = ids.map((id) => that._getChannelTimeshift(id));
     if (crosshairPosition.length === 2 || diff) {
       // calculate the difference between two recordings after adding the current difference
       if (!diff) {
@@ -2525,34 +2529,34 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         if (currentDiff[1]) {
           let remainder = diff - currentDiff[1];
           if (remainder > 0) {
-            that.vars.channelTimeshift[ids[1]] = 0;
-            that.vars.channelTimeshift[ids[0]] = currentDiff[0]
+            that._setChannelTimeshift(ids[1], 0);
+            that._setChannelTimeshift(ids[0], currentDiff[0]
               ? currentDiff[0] + remainder
-              : remainder;
+              : remainder);
           } else {
-            that.vars.channelTimeshift[ids[1]] = -remainder;
+            that._setChannelTimeshift(ids[1], -remainder);
           }
         } else {
-          that.vars.channelTimeshift[ids[0]] = currentDiff[0]
+          that._setChannelTimeshift(ids[0], currentDiff[0]
             ? currentDiff[0] + diff
-            : diff;
+            : diff);
         }
       } else if (diff < 0) {
         diff = -diff;
         if (currentDiff[0]) {
           let remainder = diff - currentDiff[0];
           if (remainder > 0) {
-            that.vars.channelTimeshift[ids[0]] = 0;
-            that.vars.channelTimeshift[ids[1]] = currentDiff[1]
+            that._setChannelTimeshift(ids[0], 0);
+            that._setChannelTimeshift(ids[1], currentDiff[1]
               ? currentDiff[1] + remainder
-              : remainder;
+              : remainder);
           } else {
-            that.vars.channelTimeshift[ids[0]] = -remainder;
+            that._setChannelTimeshift(ids[0], -remainder);
           }
         } else {
-          that.vars.channelTimeshift[ids[1]] = currentDiff[1]
+          that._setChannelTimeshift(ids[1], currentDiff[1]
             ? currentDiff[1] + diff
-            : diff;
+            : diff);
         }
       }
       that.vars.reprint = 1;
@@ -2582,7 +2586,6 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       .material_select();
     that._savePreferences({ channelTimeshift: that.vars.channelTimeshift });
     that._reloadCurrentWindow();
-    console.log(that.vars.channelTimeshift);
     that.vars.currentTimeDiff = 0;
     $(".time_sync").text("");
   },
@@ -4171,14 +4174,41 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     return true;
   },
 
+  _getChannelTimeshift(channel) {
+    var that = this;
+
+    return that.vars.channelTimeshift[channel] && that.vars.channelTimeshift[channel].timeshift ?
+      that.vars.channelTimeshift[channel].timeshift :
+      0;
+  },
+
+  _setChannelTimeshift(channel, timeshift) {
+    var that = this;
+
+    if (!that.vars.channelTimeshift[channel]) {
+      that.vars.channelTimeshift[channel] = {};
+    }
+
+    if (that._isChannelAlignable(channel)) {
+      that.vars.channelTimeshift[channel].timeshift = timeshift;
+      return true;
+    }
+
+    return false;
+  },
+
   _isChannelAlignable(channel) {
     var that = this;
-    return that.vars.channelTimeshift[channel] !== "unalignable";
+    return !(that.vars.channelTimeshift[channel] && that.vars.channelTimeshift[channel].unalignable);
   },
 
   _toggleChannelUnalignable(channel) {
     var that = this;
-    that.vars.channelTimeshift[channel] = that.vars.channelTimeshift[channel] === "unalignable" ? 0 : "unalignable";
+
+    if (!that.vars.channelTimeshift[channel]) {
+      that.vars.channelTimeshift[channel] = {};
+    }
+    that.vars.channelTimeshift[channel].unalignable = that.vars.channelTimeshift[channel].unalignable ? false : true;
     that._savePreferences({
       channelTimeshift: that.vars.channelTimeshift,
     });
@@ -8754,7 +8784,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       : {};
     console.log(timeshiftFromPreference);
     if (timeshiftFromPreference && timeshiftFromPreference[Object.keys(timeshiftFromPreference)[0]]) {
-      $(".time_sync").text("Time Difference: " + timeshiftFromPreference[Object.keys(timeshiftFromPreference)[0]] + " s");
+      $(".time_sync").text("Time Difference: " + timeshiftFromPreference[Object.keys(timeshiftFromPreference)[0].timeshift] + " s");
     }
 
   },
@@ -9926,6 +9956,9 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
             alignmentLoaded = true;
             that._reloadCurrentWindow();
+            if (!that._isInNoSyncMode()) {
+              that._displayTimeSyncInfo();
+            }
           }
           // else {
           //   console.log("initiating file upload");

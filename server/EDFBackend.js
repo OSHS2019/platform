@@ -787,8 +787,8 @@ Meteor.methods({
     var currDataFrame;
     dataFrame = allRecordings.reduce((collections, recording) => {
       // accumulate all the data from all recordings into one dataFrame object
-      let startTimeAfterAdjustment = channelTimeshift[recording._id] && channelTimeshift[recording._id] !== "unalignable"
-        ? startTime + channelTimeshift[recording._id]
+      let startTimeAfterAdjustment = channelTimeshift[recording._id] && channelTimeshift[recording._id].timeshift
+        ? startTime + channelTimeshift[recording._id].timeshift
         : startTime;
 
       currDataFrame = WFDB.rdsamp({
