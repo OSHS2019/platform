@@ -16,6 +16,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     y_limit_lower: [],
     y_limit_upper: [],
     y_axis_limited_values: [],
+    graphPopulated: false,
     projectUUID: undefined,
     requireConsent: false,
     trainingVideo: {
@@ -3663,9 +3664,10 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       that._requestData(options, (data, errorData,realData) => {
         var windowAvailable = !errorData;
         // console.log(errorData);
+        console.log(that.options.graphPopulated)
         if (
           windowAvailable &&
-          windowStartTime == that.vars.currentWindowStart
+          windowStartTime == that.vars.currentWindowStart && that.options.graphPopulated
         ) {
           that._applyFrequencyFilters(data, (dataFiltered) => {
             //console.log(that);
@@ -3674,7 +3676,16 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             //console.log(that);
             that._populateGraph(that.vars.currentWindowData,real);
           });
-        }
+        } else if (windowAvailable &&
+          windowStartTime == that.vars.currentWindowStart && !that.options.graphPopulated){
+            that._applyFrequencyFilters(data, (dataFiltered) => {
+              //console.log(that);
+              let real = that._alignRealDataandData(realData,dataFiltered);
+              that.vars.currentWindowData = dataFiltered;
+              //console.log(that);
+              that._setUpGraphFunctions(that.vars.currentWindowData,real);
+            });
+          }
 
         that._displayCrosshair(that.vars.crosshairPosition);
         if (!that.options.experiment.running) {
@@ -4467,6 +4478,8 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     that.options.y_limit_upper[index] = upperlimit;
 
+    var itemsRemoved = 0;
+
     for (let j = 0; j < that.vars.chart.series[index].yData.length; j++) {
 
       if ((that.vars.chart.series[index].realyData[j]) >= lowerlimit && (that.vars.chart.series[index].realyData[j]) <= upperlimit) {
@@ -4475,22 +4488,31 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
       }
       else {
+        //that.vars.chart.series[i].xData.splice(j - itemsRemoved, 1);
+        //itemsRemoved++;
+        
         newyData.push({
           y: that.vars.chart.series[index].yData[j],
           color: '#FFFFFF'
         });
+        
+        //newyData.push(null);
 
       }
     }
     that.vars.chart.series[index].yData = newyData;
+    that._scaleToScreen(index);
+    console.log(that.vars.chart.series[index]);
+    //console.log(that.vars);
+    that.vars.chart.redraw();
   },
-  
 
-  _populateGraph: function (data,real) {
+  _setUpGraphFunctions: function(data, real){
     var original_series = [];
     /* plot all of the points to the chart */
     var that = this;
-    console.log(that.vars.previousAnnotationLabelBox);
+    that.options.graphPopulated = true;
+
     // if the chart object does not yet exist, because the user is loading the page for the first time
     // or refreshing the page, then it's necessary to initialize the plot area
     if (!that.vars.chart) {
@@ -4520,9 +4542,12 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         original_series[i] = that.vars.chart.series[i].yData;
   
       }
+      that.vars.chart.original_series = original_series;
       //once we set up the original data, update some values based on our preferences for this file
       // add scaling factors (amplitude stuff)
       if(that.options.context.preferences.annotatorConfig.scalingFactors != null){
+        console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLl")
+        console.log(that.options.context.preferences.annotatorConfig.scalingFactors);
         that.vars.scalingFactors = that.options.context.preferences.annotatorConfig.scalingFactors;
       }
       //console.log(that.vars.translation);
@@ -4533,7 +4558,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       //limit each channel that needs to be
       if(that.options.context.preferences.annotatorConfig.limitedYAxis != null){
         that.options.context.preferences.annotatorConfig.limitedYAxis.forEach((item)=> {
-          that._limitYAxisByIndex(item.index, item.lowerlimit, item.upperlimit, original_series);
+          that._limitYAxisByIndex(item.index, item.lowerlimit, item.upperlimit, that.vars.chart.original_series);
         });
       }
       //console.log(that.vars.scalingFactors);
@@ -4544,18 +4569,6 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       // see http://jsfiddle.net/ajxyuax2/1/ 
     }
 
-    //console.log(that);
-    // updates the data that will be displayed in the chart
-    // by storing the new data in this.vars.chart.series
-    //console.log(this.vars.chart.series);
-    that._updateChannelDataInSeries(that.vars.chart.series, data,real);
-    for(let i = 0;i<that.vars.chart.series.length;i++){
-      original_series[i] = that.vars.chart.series[i].yData;
-
-    }
-    //console.log(this.vars.chart.series);
-    //console.log(this.vars.scalingFactors);
-    //console.log(original_series);
     $(that.element).find(".align_btn").click(function(){
       if(that._isChannelSelected){
         let index = that.vars.selectedChannelIndex;
@@ -4593,13 +4606,14 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
         }
       }
-    })
+    });
 
     $(that.element).find(".y_mask_btn").click(function(){
       if(that._isChannelSelected){
         that._maskChannelSelected();
       }
-    })
+    });
+
     $(that.element).find(".ylimit_btn").click(function () {
       if(that._isChannelSelected()){
         //console.log("hehe");
@@ -4607,7 +4621,8 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         
 
         let i = that.vars.selectedChannelIndex;
-        that.vars.chart.series[i].yData = [...original_series[i]];
+        that.vars.chart.series[i].yData = [...that.vars.chart.original_series[i]];
+        that.vars.chart.series[i].originalXData = that.vars.chart.series[i].xData.slice(0);
         that.options.y_axis_limited[i] = true;
         //set lower value
         var lowerlimit = document.querySelector('#ylimit_lower_input').value;
@@ -4624,6 +4639,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
           })
         }
 
+        var itemsRemoved = 0;
 
         for (let j = 0; j < that.vars.chart.series[i].yData.length; j++) {
 
@@ -4633,14 +4649,24 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
           }
           else {
+            //that.vars.chart.series[i].xData.splice(j - itemsRemoved, 1);
+            //itemsRemoved++;
+            
             newyData.push({
               y: that.vars.chart.series[i].yData[j],
               color: '#FFFFFF'
             });
+            
+            //newyData.push(null);
 
           }
         }
         that.vars.chart.series[i].yData = newyData;
+        that._scaleToScreen(i);
+        console.log(that.vars.chart.series[i]);
+        that._savePreferences({
+          scalingFactors: that.vars.scalingFactors,
+        });
         //console.log(that.vars);
         that.vars.chart.redraw();
       }
@@ -4735,6 +4761,27 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       }
     });
 
+  },
+  
+
+  _populateGraph: function (data,real) {
+    var original_series = [];
+    /* plot all of the points to the chart */
+    var that = this;
+
+    //console.log(that);
+    // updates the data that will be displayed in the chart
+    // by storing the new data in this.vars.chart.series
+    //console.log(this.vars.chart.series);
+    that._updateChannelDataInSeries(that.vars.chart.series, data,real);
+    for(let i = 0;i<that.vars.chart.series.length;i++){
+      that.vars.chart.original_series[i] = that.vars.chart.series[i].yData;
+
+    }
+    //console.log(this.vars.chart.series);
+    //console.log(this.vars.scalingFactors);
+    //console.log(original_series);
+
     // sets the min and max values for the chart
     that.vars.chart.xAxis[0].setExtremes(
       that.vars.currentWindowStart,
@@ -4751,6 +4798,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     // checks if the object is empty
     if (!that._objectIsEmpty(that.vars.scalingFactors)) {
       for (const index in that.vars.scalingFactors) {
+        console.log("wwwwwwwwwwwwwwww")
         that._customAmplitude(
           index,
           100 * (that.vars.scalingFactors[index] - 1)
@@ -4760,6 +4808,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       }
 
     }
+    console.log(that.vars.scalingFactors);
     
     //console.log(this.vars.chart.series);
 
@@ -5199,6 +5248,9 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         plotOptions: {
           series: {
             connectNulls: false,
+            dataGrouping:{
+              enabled: false
+            },
             animation: false,
             turboThreshold: 0,
             boostThreshold: 1,
@@ -8593,7 +8645,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
   _customAmplitude: function (index, scaleFactor) {
     //converts scaleFactor to a decimal from percentage
     scaleFactor = scaleFactor / 100;
-    //if(index===2){console.log(scaleFactor);}
+    if(index==0){console.log(scaleFactor);}
 
     var that = this;
     //console.log("customAmplitude")
@@ -8611,7 +8663,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     // console.log(that.vars.chart.series[index].yData);
     let newData = that.vars.chart.series[index].yData.map((point, i) => {
-      if (point !== zeroPosition) {
+      if (point !== zeroPosition && typeof point === "number") {
           // some math that checks if the point is above or below the zero position and then scaling that value, then readding it to zeroposition
           // to get an accurate percentage scaling
           return [that.vars.chart.series[index].xData[i], zeroPosition + (point - zeroPosition) * (1 + scaleFactor)];
@@ -8751,6 +8803,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       }
     }
     //console.log(that);
+    console.log(that.vars.scalingFactors);
   },
 
   _getPercentDifference: function (initialValue, finalValue) {
