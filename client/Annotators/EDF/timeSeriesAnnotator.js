@@ -8717,8 +8717,14 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     const maxChannelData = that._getMaxChannelData(index) - zeroPosition;
     const minChannelData = that._getMinChannelData(index) - zeroPosition;
 
+    console.log(maxChannelData);
+    console.log(minChannelData);
+
     const lowerBound = -200;
     const upperBound = 200;
+
+    console.log(lowerBound);
+    console.log(upperBound);
 
     const percentageDifferenceUpper = that._getPercentDifference(
       maxChannelData,
@@ -8729,15 +8735,22 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       lowerBound
     );
 
+    console.log(percentageDifferenceLower);
+    console.log(percentageDifferenceUpper);
+
     // the absolute difference between the lowerBound and the min value
     const absoluteLowerDifference = Math.abs(
       Math.abs(lowerBound) - Math.abs(minChannelData)
     );
+    
+    console.log(absoluteLowerDifference);
 
     // the absolute difference between the upperBound and the max value
     const absoluteUpperDifference = Math.abs(
       Math.abs(upperBound) - Math.abs(maxChannelData)
     );
+
+    console.log(absoluteUpperDifference);
 
      //console.log("====BEFORE=====")
      //console.log("Channel: " + index);
@@ -8770,18 +8783,18 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             that._customAmplitude(index, percentageDifferenceLower);
           } else {
             // if the upperdifference is greater, we scale the data by the percentage difference
-
             that._customAmplitude(index, percentageDifferenceUpper);
           }
         } else if (lowerBound > minChannelData && upperBound > maxChannelData) {
           // if the min data is not within the lower bound
           // we scale the data by the percentage difference
-
+          console.log("OOOOOOOOOOOOOOOOOOOOOOOOo");
+          console.log(percentageDifferenceLower ? "exists" : "no sir");
+          console.log(percentageDifferenceLower);
           that._customAmplitude(index, percentageDifferenceLower);
         } else if (lowerBound < minChannelData && upperBound < maxChannelData) {
           // if the max data is not within the upper bound
           // we scale the data by the percentage difference
-
           that._customAmplitude(index, percentageDifferenceUpper);
         }
       } else if (lowerBound < minChannelData || upperBound > maxChannelData) {
