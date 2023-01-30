@@ -3673,8 +3673,10 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             //console.log(that);
             let real = that._alignRealDataandData(realData,dataFiltered);
             that.vars.currentWindowData = dataFiltered;
+            that.vars.real = real;
             //console.log(that);
-            that._populateGraph(that.vars.currentWindowData,real);
+            //that._populateGraph(that.vars.currentWindowData,real);
+            that._populateGraph();
           });
         } else if (windowAvailable &&
           windowStartTime == that.vars.currentWindowStart && !that.options.graphPopulated){
@@ -3682,8 +3684,10 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
               //console.log(that);
               let real = that._alignRealDataandData(realData,dataFiltered);
               that.vars.currentWindowData = dataFiltered;
+              that.vars.real = real;
               //console.log(that);
-              that._setUpGraphFunctions(that.vars.currentWindowData,real);
+              //that._setUpGraphFunctions(that.vars.currentWindowData,real);
+              that._setUpGraphFunctions();
             });
           }
 
@@ -4507,10 +4511,12 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     that.vars.chart.redraw();
   },
 
-  _setUpGraphFunctions: function(data, real){
-    var original_series = [];
+  _setUpGraphFunctions: function(){
     /* plot all of the points to the chart */
     var that = this;
+    var real = that.vars.real;
+    var original_series = [];
+
     that.options.graphPopulated = true;
 
     // if the chart object does not yet exist, because the user is loading the page for the first time
@@ -4518,12 +4524,12 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     if (!that.vars.chart) {
       // if this is the first pageload, then we'll need to load the entire
       console.time("_initGraph");
-      that._initGraph(data);
+      that._initGraph(that.vars.currentWindowData);
       //console.log("[[time end]]");
       console.timeEnd("_initGraph");
       // if the plot area has already been initialized, simply update the data displayed using AJAX calls
 
-      that._updateChannelDataInSeries(that.vars.chart.series, data,real);
+      that._updateChannelDataInSeries(that.vars.chart.series, that.vars.currentWindowData,that.vars.real);
       for(let i = 0;i<that.vars.chart.series.length;i++){
         that.options.y_axis_limited[i] = false;
         that.options.y_limit_lower[i] = -200;
@@ -4715,7 +4721,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         that.options.y_axis_limited[i] = false;
         const scaleFactor = that.vars.scalingFactors[i];
         
-        that._updateSingleChannelDataInSeries(that.vars.chart.series, data,real, i);
+        that._updateSingleChannelDataInSeries(that.vars.chart.series, that.vars.currentWindowData,that.vars.real, i);
         that.options.y_axis_limited[i] = false;
         that.options.y_limit_lower[i] = -200;
         that.options.y_limit_upper[i] = 200;
@@ -4723,6 +4729,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         //that.vars.scalingFactors[i] = scaleFactor;
 
         // set the scaling factor to the original one and save it
+        console.log(that.vars.originalScalingFactors);
         that.vars.scalingFactors[i] = that.vars.originalScalingFactors[i];
         that._savePreferences({
           scalingFactors: that.vars.scalingFactors,
@@ -4764,16 +4771,17 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
   },
   
 
-  _populateGraph: function (data,real) {
-    var original_series = [];
+  _populateGraph: function () {
     /* plot all of the points to the chart */
     var that = this;
+    var original_series = [];
+
 
     //console.log(that);
     // updates the data that will be displayed in the chart
     // by storing the new data in this.vars.chart.series
     //console.log(this.vars.chart.series);
-    that._updateChannelDataInSeries(that.vars.chart.series, data,real);
+    that._updateChannelDataInSeries(that.vars.chart.series, that.vars.currentWindowData ,that.vars.real);
     for(let i = 0;i<that.vars.chart.series.length;i++){
       that.vars.chart.original_series[i] = that.vars.chart.series[i].yData;
 
