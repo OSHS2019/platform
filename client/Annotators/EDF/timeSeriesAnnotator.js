@@ -4483,10 +4483,10 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     that.options.y_limit_upper[index] = upperlimit;
 
     var itemsRemoved = 0;
-
+    var middle = (Number(lowerlimit) +  Number(upperlimit))/2;
     for (let j = 0; j < that.vars.chart.series[index].yData.length; j++) {
 
-      if ((that.vars.chart.series[index].realyData[j]) >= lowerlimit && (that.vars.chart.series[index].realyData[j]) <= upperlimit) {
+      if ((that.vars.chart.series[index].realyData[j]) >= Number(lowerlimit) && (that.vars.chart.series[index].realyData[j]) <= Number(upperlimit)) {
 
         newyData.push(that.vars.chart.series[index].yData[j]);
 
@@ -4505,7 +4505,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       }
     }
     that.vars.chart.series[index].yData = newyData;
-    that._scaleToScreen(index);
+    that._scaleToScreen(index, middle);
     console.log(that.vars.chart.series[index]);
     //console.log(that.vars);
     that.vars.chart.redraw();
@@ -4646,12 +4646,18 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         }
 
         var itemsRemoved = 0;
+        var middle = (Number(lowerlimit) +  Number(upperlimit))/2;
+        var test = [];
+        var test2 = [];
+        console.log(that.vars.chart.series[i].realyData);
 
         for (let j = 0; j < that.vars.chart.series[i].yData.length; j++) {
 
-          if ((that.vars.chart.series[i].realyData[j]) >= lowerlimit && (that.vars.chart.series[i].realyData[j]) <= upperlimit) {
+          if ((that.vars.chart.series[i].realyData[j]) >= Number(lowerlimit) && (that.vars.chart.series[i].realyData[j]) <= Number(upperlimit)) {
 
             newyData.push(that.vars.chart.series[i].yData[j]);
+            test.push(that.vars.chart.series[i].realyData[j]);
+            test2.push(that.vars.chart.series[i].yData[j]);
 
           }
           else {
@@ -4668,8 +4674,13 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
           }
         }
         that.vars.chart.series[i].yData = newyData;
+        console.log(test);
+        console.log(Math.min(...test));
+        console.log(Math.min(...test2));
+        //console.log(that.vars.chart.series[i].yData);
+        that._scaleToScreen(i, middle);
+        that._customTranslation(i, middle);
         that._scaleToScreen(i);
-        console.log(that.vars.chart.series[i]);
         that._savePreferences({
           scalingFactors: that.vars.scalingFactors,
         });
@@ -4729,6 +4740,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         //that.vars.scalingFactors[i] = scaleFactor;
 
         // set the scaling factor to the original one and save it
+        console.log("og scaling factors:");
         console.log(that.vars.originalScalingFactors);
         that.vars.scalingFactors[i] = that.vars.originalScalingFactors[i];
         that._savePreferences({
@@ -4806,7 +4818,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     // checks if the object is empty
     if (!that._objectIsEmpty(that.vars.scalingFactors)) {
       for (const index in that.vars.scalingFactors) {
-        console.log("wwwwwwwwwwwwwwww")
+        //console.log("wwwwwwwwwwwwwwww")
         that._customAmplitude(
           index,
           100 * (that.vars.scalingFactors[index] - 1)
@@ -8588,10 +8600,12 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     // console.log(that.vars.chart.series[index].yData);
     that.vars.chart.series[index].yData.forEach((point, idx) => {
-      that.vars.chart.series[index].yData[idx] =
+      if(typeof point == "number"){
+        that.vars.chart.series[index].yData[idx] =
         // some math that checks if the point is above or below the zero position and then scaling that value, then readding it to zeroposition
         // to get an accurate percentage scaling;
         point + value;
+      }
     });
 
     // code allowing the scaling to persist when you switch windows
@@ -8642,18 +8656,15 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     // preset decrease amplitude function that decreases amplitude by 50%
 
     var that = this;
-    console.log(that.vars.scalingFactors);
     that._customAmplitude(index, -50);
-    console.log(that.vars.scalingFactors);
     that._savePreferences({
       scalingFactors: that.vars.scalingFactors,
     });
   },
 
-  _customAmplitude: function (index, scaleFactor) {
+  _customAmplitude: function (index, scaleFactor, middle = 0) {
     //converts scaleFactor to a decimal from percentage
     scaleFactor = scaleFactor / 100;
-    if(index==0){console.log(scaleFactor);}
 
     var that = this;
     //console.log("customAmplitude")
@@ -8666,20 +8677,32 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     //gets the zeroPosition of each channel (where they would = 0 if the channel was centred at y = 0)
     const zeroPosition = that._getOffsetForChannelIndexPostScale(index);
+    console.log(middle);
+    console.log(zeroPosition);
+
 
     // takes each point in the ydata of the graph and scales it by the scaleFactor
 
     // console.log(that.vars.chart.series[index].yData);
     let newData = that.vars.chart.series[index].yData.map((point, i) => {
-      if (point !== zeroPosition && typeof point === "number") {
+      /*
+      if (typeof point == "number" && middle != 0){
+        point += middle;
+      }
+      */
+      if (point !== zeroPosition && typeof point == "number") {
           // some math that checks if the point is above or below the zero position and then scaling that value, then readding it to zeroposition
           // to get an accurate percentage scaling
+          if(middle != 0){
+            //console.log(zeroPosition + (point - zeroPosition) * (1 + scaleFactor));
+          }
           return [that.vars.chart.series[index].xData[i], zeroPosition + (point - zeroPosition) * (1 + scaleFactor)];
+          
       }
       return [that.vars.chart.series[index].xData[i], point];
     });
 
-    that.vars.chart.series[index].setData(newData, false, false, false);;
+    that.vars.chart.series[index].setData(newData, false, false, false);
 
     // code allowing the scaling to persist when you switch windows
     if (that.vars.recordScalingFactors) {
@@ -8706,7 +8729,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     that.vars.originalScalingFactors = that.vars.scalingFactors;
   },
 
-  _scaleToScreen: function (index) {
+  _scaleToScreen: function (index, middle = 0) {
     var that = this;
     //console.log(this.vars.scalingFactors);
     //console.log(Object.keys(this.vars.scalingFactors).length);
@@ -8717,14 +8740,15 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     const maxChannelData = that._getMaxChannelData(index) - zeroPosition;
     const minChannelData = that._getMinChannelData(index) - zeroPosition;
 
+    console.log("printing");
     console.log(maxChannelData);
     console.log(minChannelData);
 
     const lowerBound = -200;
     const upperBound = 200;
 
-    console.log(lowerBound);
-    console.log(upperBound);
+    //console.log(lowerBound);
+    //console.log(upperBound);
 
     const percentageDifferenceUpper = that._getPercentDifference(
       maxChannelData,
@@ -8735,22 +8759,22 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       lowerBound
     );
 
-    console.log(percentageDifferenceLower);
-    console.log(percentageDifferenceUpper);
+    //console.log(percentageDifferenceLower);
+    //console.log(percentageDifferenceUpper);
 
     // the absolute difference between the lowerBound and the min value
     const absoluteLowerDifference = Math.abs(
       Math.abs(lowerBound) - Math.abs(minChannelData)
     );
     
-    console.log(absoluteLowerDifference);
+    //console.log(absoluteLowerDifference);
 
     // the absolute difference between the upperBound and the max value
     const absoluteUpperDifference = Math.abs(
       Math.abs(upperBound) - Math.abs(maxChannelData)
     );
 
-    console.log(absoluteUpperDifference);
+    //console.log(absoluteUpperDifference);
 
      //console.log("====BEFORE=====")
      //console.log("Channel: " + index);
@@ -8788,9 +8812,6 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         } else if (lowerBound > minChannelData && upperBound > maxChannelData) {
           // if the min data is not within the lower bound
           // we scale the data by the percentage difference
-          console.log("OOOOOOOOOOOOOOOOOOOOOOOOo");
-          console.log(percentageDifferenceLower ? "exists" : "no sir");
-          console.log(percentageDifferenceLower);
           that._customAmplitude(index, percentageDifferenceLower);
         } else if (lowerBound < minChannelData && upperBound < maxChannelData) {
           // if the max data is not within the upper bound
@@ -8803,12 +8824,15 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         if (lowerBound < minChannelData && upperBound > maxChannelData) {
           // if both are too small
           // check which absolute difference is the lesser
-          // value to get the percentage difference
+          // value to get the percentage differenceok,
+          console.log("here");
+          console.log(absoluteLowerDifference);
+          console.log(absoluteUpperDifference);
 
           if (absoluteLowerDifference > absoluteUpperDifference) {
-            that._customAmplitude(index, percentageDifferenceUpper);
+            that._customAmplitude(index, percentageDifferenceUpper, middle);
           } else {
-            that._customAmplitude(index, percentageDifferenceLower);
+            that._customAmplitude(index, percentageDifferenceLower, middle);
           }
         } else if (lowerBound < minChannelData && upperBound < maxChannelData) {
           // if the min data is not within the lower bound
@@ -8824,18 +8848,19 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       }
     }
     //console.log(that);
-    console.log(that.vars.scalingFactors);
   },
 
   _getPercentDifference: function (initialValue, finalValue) {
     // gets the percentage difference between two values
-    return ((finalValue - initialValue) / initialValue) * 100;
+    var percentage = ((finalValue - initialValue) / initialValue) * 100
+    return percentage < 0 ? percentage * -1 : percentage;
   },
 
   _getMaxChannelData: function (index) {
     //gets the largest data point in the channel
     var that = this;
     let max = that._getOffsetForChannelIndexPostScale(index)-200;
+    console.log(that.vars.chart.series[index].yData);
     for (let i = 1;i<that.vars.chart.series[index].yData.length;i++){
       if(((typeof that.vars.chart.series[index].yData[i]) == "number")  && that.vars.chart.series[index].yData[i] > max){
         max = that.vars.chart.series[index].yData[i];
