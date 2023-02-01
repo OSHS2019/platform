@@ -4482,14 +4482,36 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     that.options.y_limit_upper[index] = upperlimit;
 
-    var itemsRemoved = 0;
+    const zeroPosition = that._getOffsetForChannelIndexPostScale(index);
+    var max = that.vars.chart.series[index].realyData[1];
+    var min = that.vars.chart.series[index].realyData[1];
+    var val = null;
+    var realval = null;
+    var difference = zeroPosition;
     var middle = (Number(lowerlimit) +  Number(upperlimit))/2;
+    //console.log(that.vars.chart.series[i].realyData);
+
     for (let j = 0; j < that.vars.chart.series[index].yData.length; j++) {
+      if(j != 0 && j != 1981 && val == null){
+        temp = Math.abs(zeroPosition - that.vars.chart.series[index].yData[j]);
+        if(temp === 0){
+          val = that.vars.chart.series[index].yData[j];
+          realval = that.vars.chart.series[index].realyData[j];
+        }
+        if(temp < difference){
+          difference = temp;
+          realval = that.vars.chart.series[index].realyData[j];
+        }
+        if(that.vars.chart.series[index].realyData[j] > max){
+          max = that.vars.chart.series[index].realyData[j];
+        } else if (that.vars.chart.series[index].realyData[j] < min) {
+          min = that.vars.chart.series[index].realyData[j];
+        }
+      }
 
       if ((that.vars.chart.series[index].realyData[j]) >= Number(lowerlimit) && (that.vars.chart.series[index].realyData[j]) <= Number(upperlimit)) {
 
         newyData.push(that.vars.chart.series[index].yData[j]);
-
       }
       else {
         //that.vars.chart.series[i].xData.splice(j - itemsRemoved, 1);
@@ -4505,8 +4527,13 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       }
     }
     that.vars.chart.series[index].yData = newyData;
+
+    //if outside the bounds of the channels placement of the chart, only shift by half the space then scale
+    var shift = middle === 0 ? 0 : middle - realval > 200 ? 100 : middle - realval < -200 ? -100 : middle-realval
+    console.log(realval - middle)
     that._scaleToScreen(index, middle);
-    console.log(that.vars.chart.series[index]);
+    that._customTranslation(index, shift);
+    that._scaleToScreen(index);
     //console.log(that.vars);
     that.vars.chart.redraw();
   },
@@ -4644,20 +4671,46 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             limitedYAxis: that.options.y_axis_limited_values,
           })
         }
-
-        var itemsRemoved = 0;
+        const zeroPosition = that._getOffsetForChannelIndexPostScale(i);
+        var max = that.vars.chart.series[i].realyData[1];
+        var min = that.vars.chart.series[i].realyData[1];
+        var val = null;
+        var realval = null;
+        var difference = zeroPosition;
         var middle = (Number(lowerlimit) +  Number(upperlimit))/2;
-        var test = [];
-        var test2 = [];
-        console.log(that.vars.chart.series[i].realyData);
+        //console.log(that.vars.chart.series[i].realyData);
 
         for (let j = 0; j < that.vars.chart.series[i].yData.length; j++) {
+          /*
+          if(that.vars.chart.series[i].yData[j] === zeroPosition && j != 0 && val == null && j != 1981){
+            val = that.vars.chart.series[i].yData[j];
+            console.log(j);
+            console.log(that.vars.chart.series[i].realyData)
+            realval = that.vars.chart.series[i].realyData[j];
+          } else if (){
+
+          }
+          */
+          if(j != 0 && j != 1981 && val == null){
+            temp = Math.abs(zeroPosition - that.vars.chart.series[i].yData[j]);
+            if(temp === 0){
+              val = that.vars.chart.series[i].yData[j];
+              realval = that.vars.chart.series[i].realyData[j];
+            }
+            if(temp < difference){
+              difference = temp;
+              realval = that.vars.chart.series[i].realyData[j];
+            }
+            if(that.vars.chart.series[i].realyData[j] > max){
+              max = that.vars.chart.series[i].realyData[j];
+            } else if (that.vars.chart.series[i].realyData[j] < min) {
+              min = that.vars.chart.series[i].realyData[j];
+            }
+          }
 
           if ((that.vars.chart.series[i].realyData[j]) >= Number(lowerlimit) && (that.vars.chart.series[i].realyData[j]) <= Number(upperlimit)) {
 
             newyData.push(that.vars.chart.series[i].yData[j]);
-            test.push(that.vars.chart.series[i].realyData[j]);
-            test2.push(that.vars.chart.series[i].yData[j]);
 
           }
           else {
@@ -4674,19 +4727,12 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
           }
         }
         that.vars.chart.series[i].yData = newyData;
-        console.log(test);
-        console.log(Math.min(...test));
-        console.log(Math.min(...test2));
-        console.log(that.vars.chart.series[i].yData);
-        /*
-        console.log(i in that.vars.translation);
-        if(i in that.vars.translation){
-          var val = that.vars.translation[i];
-          middle = Math.abs(middle - val);
-        }
-        */
+
+        //if outside the bounds of the channels placement of the chart, only shift by half the space then scale
+        var shift = middle === 0 ? 0 : middle - realval > 200 ? 100 : middle - realval < -200 ? -100 : middle-realval
+        console.log(realval - middle)
         that._scaleToScreen(i, middle);
-        that._customTranslation(i, middle);
+        that._customTranslation(i, shift);
         that._scaleToScreen(i);
         const maxChannelData = that._getMaxChannelData(i);
         const minChannelData = that._getMinChannelData(i);
