@@ -4545,9 +4545,9 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     that.options.graphPopulated = true;
 
-    // if the chart object does not yet exist, because the user is loading the page for the first time
-    // or refreshing the page, then it's necessary to initialize the plot area
-    if (!that.vars.chart) {
+    if(!that.options.graphPopulated && !that.vars.chart){
+      // if the chart object does not yet exist, because the user is loading the page for the first time
+      // or refreshing the page, then it's necessary to initialize the plot area
       // if this is the first pageload, then we'll need to load the entire
       console.time("_initGraph");
       that._initGraph(that.vars.currentWindowData);
@@ -4575,6 +4575,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
   
       }
       that.vars.chart.original_series = original_series;
+
       //once we set up the original data, update some values based on our preferences for this file
       // add scaling factors (amplitude stuff)
       if(that.options.context.preferences.annotatorConfig.scalingFactors != null){
@@ -4599,6 +4600,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       //console.log(this.vars.scalingFactors);
       that._addChangePointLabelFixed();
       // see http://jsfiddle.net/ajxyuax2/1/ 
+
     }
     that.options.graphPopulated = true;
 
@@ -4640,13 +4642,11 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         }
       }
     });
-
     $(that.element).find(".y_mask_btn").click(function(){
       if(that._isChannelSelected){
         that._maskChannelSelected();
       }
     })
-
     $(that.element).find(".y_unmask_btn").click(function(){
       let maskedChannels = [...that.options.maskedChannels];
       maskedChannels.forEach((channelIndex) => {
@@ -4850,17 +4850,18 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
   },
   
 
-  _populateGraph: function () {
+  _populateGraph: function (data,real) {
+    var original_series = [];
     /* plot all of the points to the chart */
     var that = this;
-    var original_series = [];
-
+    // if the chart object does not yet exist, because the user is loading the page for the first time
+    // or refreshing the page, then it's necessary to initialize the plot area
 
     //console.log(that);
     // updates the data that will be displayed in the chart
     // by storing the new data in this.vars.chart.series
     //console.log(this.vars.chart.series);
-    that._updateChannelDataInSeries(that.vars.chart.series, that.vars.currentWindowData ,that.vars.real);
+    that._updateChannelDataInSeries(that.vars.chart.series, that.vars.currentWindowData,that.vars.real);
     for(let i = 0;i<that.vars.chart.series.length;i++){
       that.vars.chart.original_series[i] = that.vars.chart.series[i].yData;
 
