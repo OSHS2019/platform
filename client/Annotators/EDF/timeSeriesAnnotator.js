@@ -4677,10 +4677,22 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         console.log(test);
         console.log(Math.min(...test));
         console.log(Math.min(...test2));
-        //console.log(that.vars.chart.series[i].yData);
+        console.log(that.vars.chart.series[i].yData);
+        /*
+        console.log(i in that.vars.translation);
+        if(i in that.vars.translation){
+          var val = that.vars.translation[i];
+          middle = Math.abs(middle - val);
+        }
+        */
         that._scaleToScreen(i, middle);
         that._customTranslation(i, middle);
         that._scaleToScreen(i);
+        const maxChannelData = that._getMaxChannelData(i);
+        const minChannelData = that._getMinChannelData(i);
+        //console.log(maxChannelData);
+
+        //that._scaleToScreen(i);
         that._savePreferences({
           scalingFactors: that.vars.scalingFactors,
         });
