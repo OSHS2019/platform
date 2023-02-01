@@ -3686,8 +3686,8 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
               that.vars.currentWindowData = dataFiltered;
               that.vars.real = real;
               //console.log(that);
-              //that._setUpGraphFunctions(that.vars.currentWindowData,real);
-              that._setUpGraphFunctions();
+              //that._setupGraphFunctions(that.vars.currentWindowData,real);
+              that._setupGraphFunctions();
             });
           }
 
@@ -4538,10 +4538,9 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     that.vars.chart.redraw();
   },
 
-  _setUpGraphFunctions: function(){
+  _setupGraphFunctions: function(){
     /* plot all of the points to the chart */
     var that = this;
-    var real = that.vars.real;
     var original_series = [];
 
     that.options.graphPopulated = true;
@@ -4579,7 +4578,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       //once we set up the original data, update some values based on our preferences for this file
       // add scaling factors (amplitude stuff)
       if(that.options.context.preferences.annotatorConfig.scalingFactors != null){
-        console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLl")
+        //console.log("LLLLLLLLLLLLLLLLLLLLLLLLLLLLl")
         console.log(that.options.context.preferences.annotatorConfig.scalingFactors);
         that.vars.scalingFactors = that.options.context.preferences.annotatorConfig.scalingFactors;
       }
@@ -4601,6 +4600,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       that._addChangePointLabelFixed();
       // see http://jsfiddle.net/ajxyuax2/1/ 
     }
+    that.options.graphPopulated = true;
 
     $(that.element).find(".align_btn").click(function(){
       if(that._isChannelSelected){
@@ -4645,7 +4645,16 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       if(that._isChannelSelected){
         that._maskChannelSelected();
       }
-    });
+    })
+
+    $(that.element).find(".y_unmask_btn").click(function(){
+      let maskedChannels = [...that.options.maskedChannels];
+      maskedChannels.forEach((channelIndex) => {
+        that._maskChannelWithIndex(channelIndex, false);
+      });
+
+      that._populateGraph();
+    })
 
     $(that.element).find(".ylimit_btn").click(function () {
       if(that._isChannelSelected()){
@@ -4856,9 +4865,6 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       that.vars.chart.original_series[i] = that.vars.chart.series[i].yData;
 
     }
-    //console.log(this.vars.chart.series);
-    //console.log(this.vars.scalingFactors);
-    //console.log(original_series);
 
     // sets the min and max values for the chart
     that.vars.chart.xAxis[0].setExtremes(
