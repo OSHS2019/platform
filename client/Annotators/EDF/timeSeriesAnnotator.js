@@ -5018,6 +5018,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         console.log(realval - middle)
         //that._scaleToScreen(index);
         //that._customTranslation(index, shift);
+        console.log(index);
         that._scaleToScreen(index);
         console.log(that.vars.chart.series[index].yData);
         const maxChannelData = that._getMaxChannelData(index);
@@ -5032,6 +5033,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         */
         //console.log(that.vars);
       }
+      console.log(that.vars.scalingFactors);
       that.vars.chart.redraw();
       //console.log(i + "redraw after")
       //console.log(that);
