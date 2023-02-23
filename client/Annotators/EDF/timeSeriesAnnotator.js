@@ -162,6 +162,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     y_axis_limited: [],
     y_limit_lower: [],
     y_limit_upper: [],
+    y_limit_middle: [],
     y_axis_limited_values: [],
     projectUUID: undefined,
     requireConsent: false,
@@ -1875,7 +1876,9 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             //console.log("hehe");
             newyData = [];
 
-            that.vars.chart.series[i].yData = [...that.vars.chart.original_series[i]];
+            let i = that.vars.selectedChannelIndex;
+            //that.vars.chart.series[i].yData = [...original_series[i]];
+            that._updateSingleChannelDataInSeries(that.vars.chart.series, that.vars.currentWindowData,that.vars.real, i);
             that.options.y_axis_limited[i] = true;
             //set lower value
             var lowerlimit = document.querySelector('#y-limit-min').value;
@@ -1883,34 +1886,100 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             //set upper value
             var upperlimit = document.querySelector('#y-limit-max').value;
             that.options.y_limit_upper[i] = upperlimit;
-            
+
+            console.log(that.options.y_axis_limited_values);
             //save the limit values in our preferences
-            var newLimited = that.options.y_axis_limited_values.filter(function(el){
-              return el.index != i;
-            });
-            newLimited.push({"index":i, "lowerlimit": lowerlimit, "upperlimit":upperlimit});
-            that.options.y_axis_limited_values = newLimited;
-            that._savePreferences({
-              limitedYAxis: that.options.y_axis_limited_values,
-            });
-    
-            for (let j = 0; j < that.vars.chart.series[i].yData.length; j++) {
-              if ((that.vars.chart.series[i].realyData[j]) >= lowerlimit && (that.vars.chart.series[i].realyData[j]) <= upperlimit) {
-    
-                newyData.push(that.vars.chart.series[i].yData[j]);
-    
-              }
-              else {
-                newyData.push({
-                  y: that.vars.chart.series[i].yData[j],
-                  color: '#FFFFFF'
-                });
-    
-              }
-            }
-            that.vars.chart.series[i].yData = newyData;
-            //console.log(that.vars);
-            that.vars.chart.redraw();
+            that._populateGraph();
+
+            // console.log(that.options.y_axis_limited_values.length);
+            // const zeroPosition = that._getOffsetForChannelIndexPostScale(i);
+            // var max = that.vars.chart.series[i].realyData[1];
+            // var min = that.vars.chart.series[i].realyData[1];
+            // var val = null;
+            // var realval = null;
+            // var difference = zeroPosition;
+            // var difference2 = 1000000000000;
+            // var middle = (Number(lowerlimit) +  Number(upperlimit))/2;
+            // var middleVal = null;
+            // var tempMiddle = that.vars.chart.series[i].yData[1];
+            // console.log("MIDDLE", middle);
+            // //console.log(that.vars.chart.series[i].realyData);
+            // console.log(that.vars.chart.series[i]);
+            // for (let j = 0; j < that.vars.chart.series[i].yData.length; j++) {
+            //   if(j != 0 && j != that.vars.chart.series[i].yData.length-1){
+            //     temp = Math.abs(zeroPosition - that.vars.chart.series[i].yData[j]);
+            //     if(temp === 0){
+            //       val = that.vars.chart.series[i].yData[j];
+            //       realval = that.vars.chart.series[i].realyData[j];
+            //     }
+            //     if(temp < difference){
+            //       difference = temp;
+            //       val = that.vars.chart.series[i].yData[j];
+            //       realval = that.vars.chart.series[i].realyData[j];
+            //     }
+            //     // if(that.vars.chart.series[i].realyData[j] > max){
+            //     //   console.log("2");
+            //     //   max = that.vars.chart.series[i].realyData[j];
+            //     // } else if (that.vars.chart.series[i].realyData[j] < min) {
+            //     //   console.log("3");
+            //     //   min = that.vars.chart.series[i].realyData[j];
+            //     // }
+            //     temp2 = Math.abs(middle - that.vars.chart.series[i].realyData[j]);
+            //     if(temp2 === 0){
+            //       middleVal = that.vars.chart.series[i].yData[j];
+            //     }
+            //     if(temp2 < difference2){
+            //       difference2 = temp2;
+            //       middleVal = that.vars.chart.series[i].yData[j];
+            //     }
+                
+            //   }
+
+            //   if ((that.vars.chart.series[i].realyData[j]) >= Number(lowerlimit) && (that.vars.chart.series[i].realyData[j]) <= Number(upperlimit)) {
+
+            //     newyData.push(that.vars.chart.series[i].yData[j]);
+
+            //   }
+            //   else {
+            //     //that.vars.chart.series[i].xData.splice(j - itemsRemoved, 1);
+            //     //itemsRemoved++;
+
+            //     newyData.push({
+            //       y: that.vars.chart.series[i].yData[j],
+            //       color: '#FFFFFF'
+            //     });
+
+            //     //newyData.push(null);
+
+            //   }
+            // }
+            // that.vars.chart.series[i].yData = newyData;
+            // console.log(val);
+            // console.log(zeroPosition);
+            // console.log(middleVal);
+            // // console.log(realval);
+            // //if outside the bounds of the channels placement of the chart, only shift by half the space then scale
+            // //var shift = middle === 0 ? 0 : middle - realval > 200 ? 100 : middle - realval < -200 ? -100 : middle-realval
+            // //var shift = middle === 0 ? 0 : middle-realval === 0 ? 0 : (middle-realval);
+            // // var shift = middle === 0 ? 0 : (zeroPosition - middleVal) * that.vars.scalingFactors[i];
+            // // console.log(shift);
+            // // console.log(middle);
+            // // console.log(realval);
+            // // console.log(middle - realval);
+            // // //that._scaleToScreen(i);
+            // // that._customTranslation(i, shift);
+            // // //that._scaleToScreen(i);
+            // // console.log(that.vars.chart.series[i].yData);
+            // //console.log(maxChannelData);
+
+            // //that._scaleToScreen(i);
+            // /*
+            // that._savePreferences({
+            //   scalingFactors: that.vars.scalingFactors,
+            // });
+            // */
+            // //console.log(that.vars);
+            // that.vars.chart.redraw();
           }
           else{
             console.log("channel not selected");
@@ -4997,32 +5066,74 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
   },
 
   //same as the normal limiting but based on index for the purpose of preferences
-  _limitYAxisByIndex: function(index, lowerlimit, upperlimit, original_series){
+  _limitYAxisByIndex: function(i, lowerlimit, upperlimit, original_series, newMiddleValue = null){
     newyData = [];
+    channel = that.vars.currentWindowData.channels[i];
         
-    that.vars.chart.series[index].yData = [...original_series[index]];
-    that.options.y_axis_limited[index] = true;
+    that.vars.chart.series[i].yData = [...original_series[i]];
+    that.options.y_axis_limited[i] = true;
 
-    that.options.y_limit_lower[index] = lowerlimit;
+    that.options.y_limit_lower[i] = lowerlimit;
 
-    that.options.y_limit_upper[index] = upperlimit;
+    that.options.y_limit_upper[i] = upperlimit;
+    const zeroPosition = that._getOffsetForChannelIndexPostScale(i);
+    var middleVal = null;
+    var difference = newMiddleValue ? Math.abs(zeroPosition - newMiddleValue) : that.options.y_limit_middle[i] ? Math.abs(zeroPosition - that.options.y_limit_middle[i]) : 100000000000;
+    console.log(difference);
+    var middle = (Number(lowerlimit) +  Number(upperlimit))/2;
+    var check = difference === 0 ? false : true;
 
-    for (let j = 0; j < that.vars.chart.series[index].yData.length; j++) {
+    for (let j = 0; j < that.vars.chart.series[i].yData.length; j++) {
+      if(j != 0 && j != that.vars.chart.series[i].yData.length-1){
+        if(check){
+          temp = Math.abs(middle - that.vars.chart.series[i].realyData[j]);
+          if(temp === 0){
+            middleVal = that.vars.chart.series[i].yData[j];
+            check = false;
+          }
+          //console.log(difference2);
+          if(temp < difference){
+            //console.log("ji")
+            difference = temp;
+            middleVal = that.vars.chart.series[i].yData[j];
+          }
+        }
+      }
 
-      if ((that.vars.chart.series[index].realyData[j]) >= lowerlimit && (that.vars.chart.series[index].realyData[j]) <= upperlimit) {
+      if ((that.vars.chart.series[i].realyData[j]) >= Number(lowerlimit) && (that.vars.chart.series[i].realyData[j]) <= Number(upperlimit)) {
 
-        newyData.push(that.vars.chart.series[index].yData[j]);
+        newyData.push(that.vars.chart.series[i].yData[j]);
 
       }
       else {
         newyData.push({
-          y: that.vars.chart.series[index].yData[j],
+          y: that.vars.chart.series[i].yData[j],
           color: '#FFFFFF'
         });
-
       }
     }
-    that.vars.chart.series[index].yData = newyData;
+
+  
+    that.vars.chart.series[i].yData = newyData;
+    console.log(that.vars.chart.series[i]);
+    that.options.y_limit_middle[i] = middleVal;
+    var newLimited = that.options.y_axis_limited_values.filter(function(el){
+      return el.index != i;
+    })
+    newLimited.push({"index":i, "lowerlimit": lowerlimit, "upperlimit":upperlimit, "middleVal": middleVal});
+    that.options.y_axis_limited_values = newLimited;
+    that._savePreferences({
+      limitedYAxis: that.options.y_axis_limited_values,
+    })
+    console.log(middleVal);
+    console.log(zeroPosition);
+    console.log(middle);
+    that._customTranslation(i, zeroPosition-middleVal);
+    that._scaleToScreen(i);
+    console.log(that.vars.chart.series[i].yData);
+   
+
+    //that.vars.chart.redraw();
   },
 
   _setupGraphFunctions: function(){
@@ -5046,6 +5157,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         that.options.y_axis_limited[i] = false;
         that.options.y_limit_lower[i] = -200;
         that.options.y_limit_upper[i] = 200;
+        that.options.y_limit_middle[i] = null;
       }
 
       console.log(that.vars.scalingFactors);
@@ -5082,7 +5194,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       //limit each channel that needs to be
       if(that.options.context.preferences.annotatorConfig.limitedYAxis != null){
         that.options.context.preferences.annotatorConfig.limitedYAxis.forEach((item)=> {
-          that._limitYAxisByIndex(item.index, item.lowerlimit, item.upperlimit, that.vars.chart.original_series);
+          that._limitYAxisByIndex(item.index, item.lowerlimit, item.upperlimit, that.vars.chart.original_series, item.middleVal);
         });
         that.options.y_axis_limited_values = that.options.context.preferences.annotatorConfig.limitedYAxis;
       }
@@ -5183,12 +5295,14 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         that.options.y_axis_limited[i] = false;
         that.options.y_limit_lower[i] = -200;
         that.options.y_limit_upper[i] = 200;
+        that.options.y_limit_middle[i] = null;
         //something is changing the scale factor afterwards
         //that.vars.scalingFactors[i] = scaleFactor;
 
         // set the scaling factor to the original one and save it
         that.vars.scalingFactors[i] = that.vars.originalScalingFactors[i];
         console.log(that.vars.originalScalingFactors);
+        console.log("HERE", that.vars.scalingFactors[i]);
         that._savePreferences({
           scalingFactors: that.vars.scalingFactors,
         });
@@ -5333,7 +5447,8 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     for (let i = 0;i< that.options.y_axis_limited.length;i++){
       if (that.options.y_axis_limited[i] && that.options.maskedChannels.indexOf(i) == -1) {
-        that._limitYData(i);
+        //that._limitYData(i);
+        that._limitYAxisByIndex(i, that.options.y_limit_lower[i], that.options.y_limit_upper[i], original_series);
       }
       //console.log(i + "redraw after")
       //console.log(that);
@@ -5473,6 +5588,9 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         
         //if(c===2){console.log(channel.values);}
         // gets the values
+        // console.log("FPAG", flipFactorAndGain);
+        // console.log("offsetPostScale", offsetPostScale);
+        // console.log("offsetPreScle", offsetPreScale);
         samplesScaledAndOffset = channel.values.map(function (value, v) {
           return (value + offsetPreScale) * flipFactorAndGain + offsetPostScale;
         });
@@ -5537,6 +5655,23 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     });
   },
 
+  _initYAxis: function (data){
+    var that = this;
+    var channels = data.channels;
+    var recordingEndInSecondsSnapped = that._getRecordingEndInSecondsSnapped();
+    var percentageString = String.toString(100 / channels.length) + '%';
+    var percentage = 100 / channels.length;
+    return channels.map(function (channel, c) {
+      return {
+        title:{
+          text: channel.name
+        },
+        height: percentageString,
+        top: c === 0 ? undefined : String.toString(percentage * c) + '%',
+        offset: 0,
+      }
+    });
+  },
   _initSeries: function (data) {
     var that = this;
     var samplingRate = data.sampling_rate;
@@ -5553,6 +5688,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
           [0, offset],
           [recordingEndInSecondsSnapped, offset],
         ],
+        //yAxis: c
       };
     });
   },
@@ -5922,6 +6058,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             //showFull: false,
           //},
         },
+        //yAxis: _initYAxis(data),
         scrollbar: {
           liveRedraw: false,
         },
@@ -9078,10 +9215,13 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     // console.log(that.vars.chart.series[index].yData);
     that.vars.chart.series[index].yData.forEach((point, idx) => {
-      that.vars.chart.series[index].yData[idx] =
+      if(typeof point === "number"){
+        that.vars.chart.series[index].yData[idx] =
         // some math that checks if the point is above or below the zero position and then scaling that value, then readding it to zeroposition
         // to get an accurate percentage scaling;
         point + value;
+      }
+     
     });
 
     // code allowing the scaling to persist when you switch windows
@@ -9142,8 +9282,10 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
   _customAmplitude: function (index, scaleFactor) {
     //converts scaleFactor to a decimal from percentage
+    //console.log(scaleFactor);
     scaleFactor = scaleFactor / 100;
-    //if(index===2){console.log(scaleFactor);}
+    //if(index===5){console.log(scaleFactor);}
+    //console.log(scaleFactor);
 
     var that = this;
     //console.log("customAmplitude")
@@ -9161,7 +9303,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     // console.log(that.vars.chart.series[index].yData);
     let newData = that.vars.chart.series[index].yData.map((point, i) => {
-      if (point !== zeroPosition) {
+      if (point !== zeroPosition && typeof point === "number") {
           // some math that checks if the point is above or below the zero position and then scaling that value, then readding it to zeroposition
           // to get an accurate percentage scaling
           return [that.vars.chart.series[index].xData[i], zeroPosition + (point - zeroPosition) * (1 + scaleFactor)];
@@ -9191,7 +9333,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     that.vars.allChannels.forEach((channel, idx) => {
       that._scaleToScreen(idx);
-      console.log(that.vars.scalingFactors[idx]);
+      //console.log(that.vars.scalingFactors[idx]);
     });
     that.vars.originalScalingFactors = that.vars.scalingFactors;
   },
