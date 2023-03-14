@@ -1,4 +1,4 @@
-import { Assignments, Data, Tasks, Annotations, Preferences } from '/collections';
+import { Assignments, Data, Tasks, Annotations, Preferences, PreferencesFiles } from '/collections';
 
 Router.configure({
     loadingTemplate: 'spinner',
@@ -140,6 +140,23 @@ Router.route('/data', {
             return;
         }
         this.render('Data');
+    }
+});
+
+Router.route('/preferences', {
+    name: 'preferences',
+    waitOn: function () {
+        return [
+            Meteor.subscribe('roles'),
+            Meteor.subscribe('all'),
+        ];
+    },
+    action: function () {
+        if (!Roles.userIsInRole(Meteor.userId(), 'admin')) {
+            this.redirect('home');
+            return;
+        }
+        this.render('Preferences');
     }
 });
 

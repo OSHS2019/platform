@@ -1,4 +1,4 @@
-import { Assignments, Tasks, Data, Patients } from '/collections';
+import { Assignments, Tasks, Data, Patients, PreferencesFiles, Preferences} from '/collections';
 import { MaterializeModal } from '/client/Modals/modal.js'
 
 Template.Assign.events({
@@ -7,6 +7,10 @@ Template.Assign.events({
     },
     'autocompleteselect input.task' (event, template, task) {
         template.selectedTask.set(task);
+    },
+    'autocompleteselect input.preferences'(event, template, preferences) {
+        console.log(preferences);
+        template.selectedPreferences.set(preferences);
     },
     'autocompleteselect input.data' (event, template, data) {
         const selectedData = template.selectedData.get();
@@ -260,17 +264,51 @@ Template.Assign.events({
                         if (!response.submit) {
                             return;
                         }
-                        
+                        var matchingFiles = true;
+                        const preferencesAnnotatorConfig = template.selectedPreferences.get() ? template.selectedPreferences.get().annotatorConfig : null;
                         Object.keys(assignmentsByAssignee).forEach((assigneeId) => {
                             const assignee = assigneesDict[assigneeId];
                             const assignments = assignmentsByAssignee[assigneeId];
                             assignments.forEach((assignment) => {
                                 if (!assignment.doAssign) return;
-                                Assignments.insert({
-                                    users: [ assigneeId ],
+                                console.log(preferencesAnnotatorConfig);
+                                if(preferencesAnnotatorConfig && matchingFiles){
+                                    var numChannels = assignment.data.metadata.wfdbdesc.Groups[0].Signals.length;
+                                    console.log(numChannels);
+                                    if(numChannels != Object.keys(preferencesAnnotatorConfig.scalingFactors).length){
+                                      window.alert("Preferenes file does not match the file for this assignment. Please upload a different preferences file.");
+                                      matchingFiles = false;
+                                      return;
+                                    }
+                                  }
+                                  
+                                  // Given that only admins can access the Data tab we can just assign reviewer to the current admin user                    
+                                  var obj = {
+                                    users: [assigneeId],
                                     task: task._id,
                                     dataFiles: [assignment.data._id],
-                                });
+                                    reviewer: Meteor.userId(),
+                                  }
+                                  var assignmentId = Assignments.insert(obj, function(err, docInserted){
+                                    if(err){
+                                      console.log(err);
+                                      return;
+                                    }
+                                    console.log(docInserted._id);
+                                    assignmentId = docInserted._id;
+              
+                                  });
+                                  console.log(assignmentId);
+                                  
+              
+                                  if(preferencesAnnotatorConfig){
+                                    Preferences.insert({
+                                      assignment: assignmentId,
+                                      user: assigneeId,
+                                      dataFiles: [assignment.data._id],
+                                      annotatorConfig: preferencesAnnotatorConfig,
+                                    })
+                                  }
                             });
                         });
 
@@ -278,12 +316,16 @@ Template.Assign.events({
                         template.selectedData.set({});
                         template.selectedAssignees.set({});
                         template.selectedAssigneesToCopyDataFrom.set({});
+                        template.selectedPreferences.set(null);
 
-                        window.setTimeout(function() { MaterializeModal.message({
-                            title: 'Done!',
-                            message: 'Your selected assignments have been created successfully.',
-                            outDuration: modalTransitionTimeInMilliSeconds,
-                        }); }, modalTransitionTimeInMilliSeconds);
+                        if(matchingFiles){
+                            window.setTimeout(function() { MaterializeModal.message({
+                                title: 'Done!',
+                                message: 'Your selected assignments have been created successfully.',
+                                outDuration: modalTransitionTimeInMilliSeconds,
+                            }); }, modalTransitionTimeInMilliSeconds);
+                        }
+                        
                     },
                 }); }, modalTransitionTimeInMilliSeconds);
             },
@@ -296,6 +338,7 @@ Template.Assign.onCreated(function() {
     this.selectedData = new ReactiveVar({});
     this.selectedAssignees = new ReactiveVar({});
     this.selectedAssigneesToCopyDataFrom = new ReactiveVar({});
+    this.selectedPreferences = new ReactiveVar(null);
 });
 
 Template.Assign.helpers({
@@ -311,6 +354,23 @@ Template.Assign.helpers({
                 }
             ]
         }
+    },
+    preferencesAutoCompleteSettings(){
+        console.log(Template.preferencesAutocomplete);
+        return {
+          limit: Number.MAX_SAFE_INTEGER,
+          rules: [
+            {
+              collection: PreferencesFiles,
+              field: 'name',
+              matchAll: true,
+              template: Template.preferencesAutocomplete,
+            }
+          ]
+        }
+    },
+    preferences(){
+        return Template.instance().selectedPreferences.get();
     },
     task() {
         return Template.instance().selectedTask.get();

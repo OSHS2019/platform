@@ -64,7 +64,7 @@ Template.AnnotatorEDF.onRendered(function() {
 			);
 		}, ""),
 		allRecordings: this.data.dataset.map((data) => {
-			return { _id: data._id, path: data.path, source: data.source };
+			return { _id: data._id, name: data.name, path: data.path, source: data.source };
 		}),
 		context: this.data,
 		setVisibilityStatusForInfoPanel: (isVisible) => {

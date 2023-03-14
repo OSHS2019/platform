@@ -25,7 +25,7 @@
             {{#if task}}
             <div class="row">
                 <div class="col s12 text-center">
-                    <h4>Select Recordings</h4>
+                    <h4>Select Recordings and/or Preferences</h4>
                 </div>
                 <div class="col s12">
                     <div class="input-group">
@@ -38,6 +38,17 @@
                         <span class="input-group-addon"><span>Add all recordings assigned to reader</span></span>
                         {{> inputAutocomplete settings=singleUserAutocompleteSettings class="assignee-to-copy-data-from form-control autoclear"}}
                     </div>
+                </div>
+                <div class="col s12">
+                    <div class="input-group">
+                        <span class="input-group-addon"><span>Add Preferences</span></span>
+                        {{> inputAutocomplete settings=preferencesAutoCompleteSettings class="preferences form-control autoclear"}}
+                    </div>
+                    {{#if preferences}}
+                    <div class="collection card">
+                        <div class="collection-item"><i class="fa fa-check"></i> {{preferences.name}}</div>
+                    </div>
+                    {{/if}}
                 </div>
                 {{#if assigneesToCopyDataFrom}}
                 <div class="col s12">
@@ -95,6 +106,10 @@
 </template>
 
 <template name="taskAutocomplete">
+    <span>{{name}}</span>
+</template>
+
+<template name="preferencesAutocomplete">
     <span>{{name}}</span>
 </template>
 

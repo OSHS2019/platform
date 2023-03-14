@@ -1,10 +1,10 @@
-.data .reactive-table tbody tr.selected-data {
+.preferences .reactive-table tbody tr.selected-data {
 	border: 3px solid #ff4081;
     background: #f8bbd0;
 }
 
 /* Code for delete butotn inside the files reactive table*/
-.data .reactive-table .delete-button {
+.preferences .reactive-table .delete-button {
     background-color: red;
     border-color: red;
     color :white;

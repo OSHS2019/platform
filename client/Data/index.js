@@ -1,4 +1,4 @@
-import { Data, Tasks, Assignments, Patients} from '/collections';
+import { PreferencesFiles, Preferences, Data, Tasks, Assignments, Patients} from '/collections';
 import moment from 'moment';
 import { MaterializeModal } from '/client/Modals/modal.js'
 import { EDFFile } from '/collections';
@@ -19,6 +19,8 @@ let cond = {}
 var selectedDataG = new ReactiveVar({});
 var selectedAssigneesG = new ReactiveVar({});
 var selectedTaskG = new ReactiveVar(false);
+var loading = new ReactiveVar(false);
+var selectedPreferencesG = new ReactiveVar(null);
 
 let renderDate = (dateValue) => {
   if (dateValue instanceof Date) {
@@ -199,6 +201,7 @@ Template.Data.events({
     let filesSuccessfullyUploaded = 0;
     let filesUploadFailed = "";
     let uploadsEnded = 0;
+    loading.set(true);
 
     for (let i = 0; i < allFiles.length; i++) {
       const input = allFiles[i].name;
@@ -299,6 +302,7 @@ Template.Data.events({
         uploadsEnded++;
 
         if (uploadsEnded === allFiles.length) {
+          loading.set(false);
           window.alert(`${allFiles.length - filesSuccessfullyUploaded}/${allFiles.length} files failed to upload:\n${filesUploadFailed}\n\n$`);
         }
 
@@ -307,7 +311,9 @@ Template.Data.events({
 
   },
   'click .btn.download': function () {
-    $(Template.instance().find('table.reactive-table')).table2csv();
+    loading.set(true);
+    $(Template.instance().find('table')).table2csv();
+    loading.set(false);
   },
   'click .btn.upload': function () {
     const files = document.getElementById("File");
@@ -330,6 +336,8 @@ Template.Data.events({
     let filesSuccessfullyUploadedString = "";
     let overwritePromise = false;
     let overwriteDuplicates = false;
+
+    loading.set(true);
 
     for (let i = 0; i < allFiles.length; i++) {
 
@@ -411,11 +419,12 @@ Template.Data.events({
   
               uploadInstance.on('end', function (error, fileObj) {
                 if (error) {
-  
+                  loading.set(false);
                   window.alert(`Error uploading ${fileObj.name}: ` + error.reason);
                   filesUploadFailed += fileObj.name + ": " + error.reason + "\n";
                   uploadsEnded++;
                   if (uploadsEnded === allFiles.length) {
+                    loading.set(false);
                     window.alert(`${allFiles.length - filesSuccessfullyUploaded}/${allFiles.length} files failed to upload:\n${filesUploadFailed}\n\n${filesSuccessfullyUploaded}/${allFiles.length} files successfully uploaded:\n${filesSuccessfullyUploadedString}`);
                   }
                 } else {
@@ -524,6 +533,7 @@ Template.Data.events({
                     uploadsEnded++;
   
                     if (uploadsEnded === allFiles.length) {
+                      loading.set(false);
                       window.alert(`${allFiles.length - filesSuccessfullyUploaded}/${allFiles.length} files failed to upload:\n${filesUploadFailed}\n\n${filesSuccessfullyUploaded}/${allFiles.length} files successfully uploaded:\n${filesSuccessfullyUploadedString}`);
                     }
   
@@ -541,10 +551,12 @@ Template.Data.events({
               filesUploadFailed += input.name + ": " + err + "\n";
   
               if (uploadsEnded === allFiles.length) {
+                loading.set(false);
                 window.alert(`${allFiles.length - filesSuccessfullyUploaded}/${allFiles.length} files failed to upload:\n${filesUploadFailed}\n\n${filesSuccessfullyUploaded}/${allFiles.length} files successfully uploaded:\n${filesSuccessfullyUploadedString}`);
               }
             });
           }).catch(error => {
+            loading.set(false);
             console.log("Upload Process Failed: ", error);
           });
 
@@ -564,6 +576,10 @@ Template.Data.events({
   'autocompleteselect input.task'(event, template, task) {
     console.log(task);
     template.selectedTask.set(task);
+  },
+  'autocompleteselect input.preferences'(event, template, preferences) {
+    console.log(preferences);
+    template.selectedPreferences.set(preferences);
   },
   'click .change-page'(event, template) {
     template.change.set(false)
@@ -663,33 +679,72 @@ Template.Data.events({
                 if (!response.submit) {
                   return;
                 }
+                var matchingFiles = true;
+                const preferencesAnnotatorConfig = template.selectedPreferences.get() ? template.selectedPreferences.get().annotatorConfig : null;
                 Object.keys(assignmentsByAssignee).forEach((assigneeId) => {
                   const assignments = assignmentsByAssignee[assigneeId];
                   var dataFiles = assignments.map((assignment) =>
                     assignment.data._id
                   );
-                  // Given that only admins can access the Data tab we can just assign reviewer to the current admin user
-                  console.log(dataFiles);
-                  Assignments.insert({
+                  if(preferencesAnnotatorConfig && matchingFiles){
+                    // alignment has strictly 2 files
+                    var numChannels1 = assignments[0].data.metadata.wfdbdesc.Groups[0].Signals.length;
+                    var numChannels2 = assignments[1].data.metadata.wfdbdesc.Groups[0].Signals.length;
+                    //console.log(numChannels);
+                    var totalChannels = numChannels1 + numChannels2;
+                    if(totalChannels != Object.keys(preferencesAnnotatorConfig.scalingFactors).length){
+                      window.alert("Preferenes file does not match the files for this assignment. Please upload a different preferences file.");
+                      matchingFiles = false;
+                      return;
+                    }
+                  }
+
+                  var obj = {
                     users: [assigneeId],
                     task: task._id,
                     dataFiles: dataFiles,
                     reviewer: Meteor.userId(),
+                  }
+                  var assignmentId = Assignments.insert(obj, function(err, docInserted){
+                    if(err){
+                      console.log(err);
+                      console.log("error boy")
+                      return;
+                    }
+                    console.log(docInserted._id);
+                    assignmentId = docInserted._id;
+
                   });
+                  console.log(assignmentId);
+                  
+
+                  if(preferencesAnnotatorConfig){
+                    Preferences.insert({
+                      assignment: assignmentId,
+                      user: assigneeId,
+                      dataFiles: dataFiles,
+                      annotatorConfig: preferencesAnnotatorConfig,
+                    })
+                  }
+
                 });
 
 
                 template.selectedTask.set(false);
                 template.selectedData.set({});
                 template.selectedAssignees.set({});
+                template.selectedPreferences.set(null);
 
-                window.setTimeout(function () {
-                  MaterializeModal.message({
-                    title: 'Done!',
-                    message: 'Your selected alignment have been created successfully.',
-                    outDuration: modalTransitionTimeInMilliSeconds,
-                  });
-                }, modalTransitionTimeInMilliSeconds);
+                if(matchingFiles){
+                  window.setTimeout(function () {
+                    MaterializeModal.message({
+                      title: 'Done!',
+                      message: 'Your selected alignment have been created successfully.',
+                      outDuration: modalTransitionTimeInMilliSeconds,
+                    });
+                  }, modalTransitionTimeInMilliSeconds);
+                }
+                
               },
             });
           }, modalTransitionTimeInMilliSeconds);
@@ -773,32 +828,71 @@ Template.Data.events({
                   return;
                 }
 
+                var matchingFiles = true;
+                const preferencesAnnotatorConfig = template.selectedPreferences.get() ? template.selectedPreferences.get().annotatorConfig : null;
                 Object.keys(assignmentsByAssignee).forEach((assigneeId) => {
                   const assignee = assigneesDict[assigneeId];
                   const assignments = assignmentsByAssignee[assigneeId];
                   assignments.forEach((assignment) => {
                     if (!assignment.doAssign) return;
-                    // Given that only admins can access the Data tab we can just assign reviewer to the current admin user
-                    Assignments.insert({
+
+                    if(preferencesAnnotatorConfig && matchingFiles){
+                      var numChannels = assignment.data.metadata.wfdbdesc.Groups[0].Signals.length;
+                      console.log(numChannels);
+                      if(numChannels != Object.keys(preferencesAnnotatorConfig.scalingFactors).length){
+                        window.alert("Preferenes file does not match the file for this assignment. Please upload a different preferences file.");
+                        matchingFiles = false;
+                        return;
+                      }
+                    }
+                    
+                    // Given that only admins can access the Data tab we can just assign reviewer to the current admin user                    
+                    var obj = {
                       users: [assigneeId],
                       task: task._id,
                       dataFiles: [assignment.data._id],
                       reviewer: Meteor.userId(),
+                    }
+                    var assignmentId = Assignments.insert(obj, function(err, docInserted){
+                      if(err){
+                        console.log(err);
+                        console.log("error boy")
+                        return;
+                      }
+                      console.log(docInserted._id);
+                      assignmentId = docInserted._id;
+
                     });
+                    console.log(assignmentId);
+                    
+
+                    if(preferencesAnnotatorConfig){
+                      Preferences.insert({
+                        assignment: assignmentId,
+                        user: assigneeId,
+                        dataFiles: [assignment.data._id],
+                        annotatorConfig: preferencesAnnotatorConfig,
+                      })
+                    }
+                    
                   });
                 });
 
                 template.selectedTask.set(false);
                 template.selectedData.set({});
                 template.selectedAssignees.set({});
+                template.selectedPreferences.set(null);
 
-                window.setTimeout(function () {
-                  MaterializeModal.message({
-                    title: 'Done!',
-                    message: 'Your selected assignments have been created successfully.',
-                    outDuration: modalTransitionTimeInMilliSeconds,
-                  });
-                }, modalTransitionTimeInMilliSeconds);
+                if(matchingFiles){
+                  window.setTimeout(function () {
+                    MaterializeModal.message({
+                      title: 'Done!',
+                      message: 'Your selected assignments have been created successfully.',
+                      outDuration: modalTransitionTimeInMilliSeconds,
+                    });
+                  }, modalTransitionTimeInMilliSeconds);
+                }
+                
               },
             });
           }, modalTransitionTimeInMilliSeconds);
@@ -968,6 +1062,28 @@ Template.Data.helpers({
   data() {
     return Object.values(Template.instance().selectedData.get());
   },
+  loading(){
+    //console.log(Template.instance());
+    return Template.instance().loading.get();
+  },
+  preferencesAutoCompleteSettings(){
+    console.log(PreferencesFiles.find());
+    console.log(Data.find())
+    return {
+      limit: Number.MAX_SAFE_INTEGER,
+      rules: [
+        {
+          collection: PreferencesFiles,
+          field: 'name',
+          matchAll: true,
+          template: Template.preferencesAutocomplete,
+        }
+      ]
+    }
+  },
+  preferences(){
+    return Template.instance().selectedPreferences.get();
+  },
   taskAutocompleteSettings() {
     return {
       limit: Number.MAX_SAFE_INTEGER,
@@ -1088,23 +1204,25 @@ Meteor.isClient && Template.registerHelper('TabularTables',TabularTables);
     name: "Data",
     collection: Data,
     columns: [
-      {data: "_id", title: "Path",
-        render:function(val) {
-          const data = Data.find({_id: val}).fetch();
-          let path = "";
-          let name = "";
-          data.forEach((d) => {
-            path = d.path;
-            name = d.name;
-          });
-          let pathEnd = path != null ? path.lastIndexOf("/") : -1;
-          return pathEnd === -1 ? name : path.substring(0, pathEnd + 1) + name;
+      {data: "name", title: "Name",
+        render:function(val, type, row) {
+          if (type === 'display') {
+            const data = Data.find({_id: row._id}).fetch();
+            let path = "";
+            data.forEach((d) => {
+              path = d.path;
+            });
+            let pathEnd = path != null ? path.lastIndexOf("/") : -1;
+            return pathEnd === -1 ? val : path.substring(0, pathEnd + 1) + val;
+          } else {
+            return val;
+          }
         }},
       {data: "metadata.wfdbdesc.Length", title: "Length",
         render:function(val){
           return val.split(" ")[0];
         }},
-      {data: "_id", title: "Patient #",
+      {data: "_id", title: "Patient #", searchable: false,
         render:function(val){
           const data = Data.find({_id: val}).fetch();
           let patientNum = "";
@@ -1114,7 +1232,7 @@ Meteor.isClient && Template.registerHelper('TabularTables',TabularTables);
           })
           return patientNum;
         }},
-      {data: "_id", title: "# Assignments", 
+      {data: "_id", title: "# Assignments", searchable: false, 
         render:function(val){
           if(val){
             const data = Data.find({_id: val}).fetch();
@@ -1125,7 +1243,7 @@ Meteor.isClient && Template.registerHelper('TabularTables',TabularTables);
             return numAssignments;
           }
         }},
-        {data: "_id", title: "# Assignments Completed", 
+        {data: "_id", title: "# Assignments Completed", searchable: false, 
         render:function(val){
           const data = Data.find({_id: val}).fetch();
           let numAssignmentsCompleted = 0;
@@ -1134,7 +1252,7 @@ Meteor.isClient && Template.registerHelper('TabularTables',TabularTables);
           })
           return numAssignmentsCompleted;
         }},
-        {data: "_id", title: "Assignees", 
+        {data: "_id", title: "Assignees", searchable: false, 
         render:function(val){
           const data = Data.find({_id: val}).fetch();
           let assignees = [];
@@ -1317,13 +1435,16 @@ Template.Data.onCreated(function () {
   this.selectedTask = selectedTaskG;
   this.selectedData = selectedDataG;
   this.selectedAssignees = selectedAssigneesG;
+  this.selectedPreferences = selectedPreferencesG;
   this.change = new ReactiveVar(true);
   this.align = new ReactiveVar(true);
-
+  this.loading = loading;
+  //console.log(Data.find());
   //console.log(this);
 });
 
 Template.selected.onCreated(function(){
   this.change = new ReactiveVar(true);
   this.align = new ReactiveVar(true);
+  this.loading = loading;
 });

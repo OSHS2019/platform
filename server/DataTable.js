@@ -1,5 +1,5 @@
 import { Tabular } from "meteor/aldeed:tabular";
-import { Data, Tasks, Assignments, Patients} from '/collections';
+import { Data, Tasks, Assignments, Patients, PreferencesFiles} from '/collections';
 
 TabularTables = {};
 Meteor.isClient && Template.registerHelper('TabularTables',TabularTables);
@@ -8,17 +8,25 @@ TabularTables.Data = new Tabular.Table({
     name: "Data",
     collection: Data,
     columns: [
-        {data: "_id", title: "Path",
-        render:function(val) {
-          const data = Data.find({_id: val}).fetch();
-          let pathEnd = data.path.lastIndexOf("/");
-          return pathEnd === -1 ? data.name : data.path.substring(0, pathEnd + 1) + data.name;
-        }},
+        {data: "name", title: "Name",
+          render:function(val, type, row) {
+            if (type === 'display') {
+              const data = Data.find({_id: row._id}).fetch();
+              let path = "";
+              data.forEach((d) => {
+                path = d.path;
+              });
+              let pathEnd = path != null ? path.lastIndexOf("/") : -1;
+              return pathEnd === -1 ? val : path.substring(0, pathEnd + 1) + val;
+            } else {
+              return val;
+            }
+          }},
         {data: "metadata.wfdbdesc.Length", title: "Length",
           render:function(val){
             return val.split(" ")[0];
           }},
-        {data: "_id", title: "Patient #",
+        {data: "_id", title: "Patient #", searchable: false,
           render:function(val){
             //let patient_id = Data.findOne({_id:val}).patient;
             //return Patients.findOne({_id:patient_id}).id;
@@ -30,7 +38,7 @@ TabularTables.Data = new Tabular.Table({
             })
             return patientNum;
           }},
-        {data: "_id", title: "# Assignments", 
+        {data: "_id", title: "# Assignments", searchable: false, 
           render:function(val){
             if(val){
               const data = Data.find({_id: val}).fetch();
@@ -41,7 +49,7 @@ TabularTables.Data = new Tabular.Table({
               return numAssignments;
             }
           }},
-          {data: "_id", title: "# Assignments Completed", 
+          {data: "_id", title: "# Assignments Completed", searchable: false, 
           render:function(val){
             const data = Data.find({_id: val}).fetch();
             let numAssignmentsCompleted = 0;
@@ -50,7 +58,7 @@ TabularTables.Data = new Tabular.Table({
             })
             return numAssignmentsCompleted;
           }},
-          {data: "_id", title: "Assignees", 
+          {data: "_id", title: "Assignees", searchable: false, 
           render:function(val){
             const data = Data.find({_id: val}).fetch();
             let assignees = [];
@@ -66,6 +74,30 @@ TabularTables.Data = new Tabular.Table({
       ],
     initComplete: function() {
         $('.dataTables_empty').html('processing');
+    },
+    processing: false,
+    skipCount: true,
+    pagingType: 'simple',
+    infoCallback: (settings, start, end, total) => `Total: ${total}, Showing ${start} to ${end} `,
+});
+
+
+TabularTables.PreferencesFiles = new Tabular.Table({
+    name: "PreferencesFiles",
+    collection: PreferencesFiles,
+    columns: [
+      {data: "name", title: "Name"},
+      {data: "annotatorConfig", title: "Channels Required", 
+      render:function(val){
+        return Object.keys(val.scalingFactors).length;
+      }},
+      {title: "Delete",
+        tmpl: Meteor.isClient && Template.deleteButtonPreferences},
+      {title: "Selected", 
+        tmpl: Meteor.isClient && Template.selectedPreferences}
+      ],
+    initComplete: function() {
+      $('.dataTables_empty').html('processing');
     },
     processing: false,
     skipCount: true,

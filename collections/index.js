@@ -89,6 +89,7 @@ let Assignments;
 let Annotations;
 let Preferences;
 let Arbitrations;
+let PreferencesFiles;
 
 if (Meteor.isClient) {
     Meteor.subscribe('all');
@@ -831,11 +832,21 @@ Assignments.helpers({
   },
   dataDocs() {
     let queryArray = this.dataFiles.map((dataId) => { return { _id: dataId }; });
+    // console.log(queryArray);
+    // console.log((Data.find({ $or: queryArray }) || false).fetch());
+    var data = (Data.find({ $or: queryArray }) || false).fetch();
+    if(data[0]){
+        var firstDoc = data[0]._id;
+        if(firstDoc != queryArray[0]){
+            return (Data.find({ $or: queryArray }, {sort: { "_id": -1}}) || false);
+        }
+    }
     return Data.find({ $or: queryArray }) || false;
   },
   patientDoc() {
     // only return the patient of the first data in dataFiles
     const data = this.dataDocs().fetch();
+    //console.log(data);
     if (!data.length) return false;
     return data.map(data => data.patientDoc());
   },
@@ -1646,6 +1657,19 @@ Annotations.permit(['insert', 'update', 'remove']).ifHasRole('admin').allowInCli
 Annotations.permit(['insert', 'update', 'remove']).ifForOwnAssignment().allowInClientCode();
 Annotations.attachCollectionRevisions(CollectionRevisions.Annotations);
 exports.Annotations = Annotations;
+
+PreferencesFiles = new Meteor.Collection('preferencesFiles');
+Schemas.PreferencesFiles = new SimpleSchema({
+    name: {
+    type: String,
+    label: 'Name',
+    },
+    annotatorConfig: SchemaHelpers.annotatorConfig,
+});
+PreferencesFiles.attachSchema(Schemas.PreferencesFiles);
+PreferencesFiles.permit(['insert', 'update', 'remove']).ifHasRole('admin').allowInClientCode();
+PreferencesFiles.attachCollectionRevisions();
+exports.PreferencesFiles = PreferencesFiles;
 
 Preferences = new Meteor.Collection('preferences');
 Schemas.Preferences = new SimpleSchema({

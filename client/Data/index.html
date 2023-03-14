@@ -60,6 +60,9 @@
                 <input type="file" accept=".edf" multiple id="File" >
                 <b>Folders:</b>
                 <input type="file" multiple id="Folder" webkitdirectory="true">
+                {{#if loading}}
+                <div class="loader"></div>
+                {{/if}}
             </center>
             <br>
             <button class="btn download">Download Visible Rows To CSV</button>
@@ -77,6 +80,15 @@
             {{#if task}}
             <div class="collection card">
                 <div class="collection-item"><i class="fa fa-check"></i> {{task.name}}</div>
+            </div>
+            {{/if}}
+            <div class="input-group">
+                <span class="input-group-addon"><span>Add Preferences</span></span>
+                {{> inputAutocomplete settings=preferencesAutoCompleteSettings class="preferences form-control autoclear"}}
+            </div>
+            {{#if preferences}}
+            <div class="collection card">
+                <div class="collection-item"><i class="fa fa-check"></i> {{preferences.name}}</div>
             </div>
             {{/if}}
             <div class="input-group">

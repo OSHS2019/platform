@@ -1,4 +1,4 @@
-import { Patients, Data, Tasks, Guidelines, Instructions, Propositions, Assignments, Annotations, Arbitrations, Preferences } from '/collections'
+import { Patients, Data, Tasks, Guidelines, Instructions, Propositions, Assignments, Annotations, Arbitrations, Preferences, PreferencesFiles } from '/collections'
 
 const annotationFields = {
    'value.metadata.annotatorConfig': 0,
@@ -6,7 +6,8 @@ const annotationFields = {
 }
 
 Meteor.publish('all', function() {
-    if (!Roles.userIsInRole(this.userId, 'admin')) return [];
+    // we want people to be able to access the preferences dir in the annotator (there is no update or delete there)
+    if (!Roles.userIsInRole(this.userId, 'admin')) return [PreferencesFiles.find({})];
     return [
         Meteor.users.find({}),
         Patients.find({}),
@@ -17,6 +18,7 @@ Meteor.publish('all', function() {
         Propositions.find({}),
         Assignments.find({}),
         Arbitrations.find({}),
+        PreferencesFiles.find({}),
     ]
 });
 

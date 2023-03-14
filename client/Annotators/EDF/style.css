@@ -200,6 +200,13 @@ dialog .input-field input {
   width:100%;
 }
 
+.dialog-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 #annotation-manager-dialog {
   padding: 10px 45px;
   display: flex;
@@ -207,7 +214,7 @@ dialog .input-field input {
   justify-content: center;
 }
 
-.annotation-manager-table-header {
+.table-header-sort {
   cursor: pointer;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -229,13 +236,6 @@ dialog .input-field input {
 
 .annotation-manager-table-pagination {
   cursor: default;
-}
-
-.annotation-manager-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .annotation_manager_big_div{
@@ -297,8 +297,21 @@ dialog .input-field input {
 }
 
 .timesync_panel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   float: left;
   margin: 0;
+}
+
+.crosshair-time-input-container {
+  float: left;
+  width: 20%;
+  margin: 0px 0px 0px 20px;
+}
+
+.crosshair-time-input-container .crosshair-time-input:not(.browser-default) {
+  margin: 0px;
 }
 
 .timesync_panel button {
