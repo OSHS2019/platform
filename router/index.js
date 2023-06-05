@@ -127,6 +127,23 @@ Router.route("/files", {
   },
 });
 
+Router.route('/tasks', {
+    name: 'tasks',
+    waitOn: function () {
+        return [
+            Meteor.subscribe('roles'),
+            Meteor.subscribe('all'),
+        ];
+    },
+    action: function () {
+        if (!Roles.userIsInRole(Meteor.userId(), 'admin')) {
+            this.redirect('home');
+            return;
+        }
+        this.render('Tasks');
+    }
+});
+
 Router.route('/data', {
     name: 'data',
     waitOn: function () {
