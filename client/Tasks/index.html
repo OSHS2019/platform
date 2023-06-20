@@ -1,11 +1,18 @@
 <template name="Tasks">
     {{> Navigation}}
-
     <div class="row">
         <div class="col s12">
             <div class="col s12 m3">
                 <h3>Tasks</h3>
             </div>
         </div>
+    </div>
+    <div>{{> createTask}}</div>
+</template>
+
+<template name="createTask">
+    <div>
+        <input type="text" class="taskName" id="taskName" placeholder="Enter a Task">
+        <button type = "button" class = "btn create-button" >Create Task</button>
     </div>
 </template>

@@ -98,6 +98,9 @@ const recordingPaths = [
 var recordingInfo = {};
 
 Meteor.startup(() => {
+  // Create a task names schema in the DB
+  TaskNames = new Mongo.Collection("tasknames");
+
   let addData = function (dataInfo, recordingFileFolder) {
     if (recordingInfo[recordingFileFolder] !== undefined) {
       recordingInfo[recordingFileFolder].push(dataInfo);

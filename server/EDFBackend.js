@@ -708,6 +708,17 @@ let deleteAssignment = (ids, callback) => {
 }
 
 Meteor.methods({
+  // Add a new task
+  "addTask"(taskName){
+    return new Promise((resolve, reject) => {
+      if (err){
+        return reject(err);
+      }
+      else{
+        TaskNames.insert({TaskName: taskName});
+      }
+    })
+  },
 
   "removeFile"(fileName){
     return new Promise((resolve, reject) => {
