@@ -711,12 +711,7 @@ Meteor.methods({
   // Add a new task
   "addTask"(taskName){
     return new Promise((resolve, reject) => {
-      if (err){
-        return reject(err);
-      }
-      else{
-        TaskNames.insert({TaskName: taskName});
-      }
+      TaskNames.insert({TaskName: taskName});
     })
   },
 

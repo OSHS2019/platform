@@ -13,10 +13,10 @@ Template.createTask.events({
     'click .create-button': function(event,template){
         // Task name should not be empty string
         if (document.getElementsByClassName('taskName')[0].value === ""){
-            alert("Please enter a task name");
+            alert("Please enter a task name.");
         } else{
-            alert(document.getElementsByClassName('taskName')[0].value);
             Meteor.call("addTask", document.getElementsByClassName('taskName')[0].value);
+            alert("Task added!");
         }
     }
 })
