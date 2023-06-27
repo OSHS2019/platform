@@ -121,6 +121,44 @@ let waitForInsertingAnnotationsPromise = async function(data){
   })
 }
 
+let clearOldAnnotations = async function(id) {
+  return new Promise(async (resolve, reject) => {
+    
+    console.log(id);
+
+    var docs = [];
+    let annotations = Annotations.find(
+      {
+        assignment: that.options.context.assignment._id,
+        dataFiles: that.options.context.dataset.map((data) => data._id),
+        type: "SIGNAL_ANNOTATION",
+      },
+    ).fetch();
+    let updateNeeded = false;
+    annotations.forEach(doc => {
+      var newDoc = {...doc};
+      newDoc["assignment"] = that.options.context.assignment._id;
+      delete newDoc.updatedAt;
+      delete newDoc._id;
+      console.log(newDoc);
+      if (newDoc.value.metadata.new == "yes") {
+        updateNeeded = true;
+        newDoc.value.metadata.new = "no";
+        docs.push(newDoc);
+      }
+      //resolve();
+    });
+
+    if (updateNeeded) {
+      console.log("updated");
+      await _deleteReviewAnnotations(that.options.context.assignment._id);
+      await _insertReviewAnnotations(docs);
+    }
+    console.log("resolving");
+    resolve();
+  })
+}
+
 let createPreferences = async function(newPreferences){
 
   return new Promise((resolve, reject) => {
@@ -167,7 +205,7 @@ let sendChanges = async function(data){
   newPreferences["annotatorConfig"]["startTime"] = 0;
   await createPreferences(newPreferences);
 
-  await _deleteReviewAnnotations(assignmentId);
+  //await _deleteReviewAnnotations(assignmentId);
   let annotations = Annotations.find(
     {
       assignment: that.options.context.assignment._id,
@@ -181,12 +219,14 @@ let sendChanges = async function(data){
     var newDoc = {...doc};
     newDoc["assignment"] = assignmentId;
     newDoc["user"] = that.options.context.assignment.reviewing;
+    newDoc.value.metadata.new = "yes";
     delete newDoc.updatedAt;
     delete newDoc._id;
     //console.log(newDoc);
     docs.push(newDoc);
     //resolve();
   });
+  console.log(docs);
   await _insertReviewAnnotations(docs);
   window.alert("Changes have been sent to the annotator's assignment");
 }
@@ -3854,9 +3894,27 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     var that = this;
     var element = $(that.element);
     console.log(that.options.context);
+    let reviewerChanges = false;
+    annotations.forEach(doc => {
+      var newDoc = {...doc};
+      newDoc["assignment"] = that.options.context.assignment._id;
+      delete newDoc.updatedAt;
+      delete newDoc._id;
+      console.log(newDoc);
+      if (newDoc.value.metadata.new == "yes") {
+        reviewerChanges = true;
+        newDoc.value.metadata.new = "no";
+        docs.push(newDoc);
+      }
+    })
+    if (reviewerChanges) {
+      window.alert("Changes have been made by the reviewer while in review.")
+    }
     element.find("#done_button").click(function (){
       that._showLoading();
       user = Meteor.users.findOne(Meteor.userId());
+      // Check to see if there are NEW (sent changes) annotations
+      clearOldAnnotations(data);
       // if the user has a role, then they are either an admin or test user
       if(user.roles){
         console.log("check1");
@@ -11278,6 +11336,12 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     while (oldAnnotations && oldAnnotations.length > 0) {
       oldAnnotations[0].destroy();
     }
+    let reviewing = false;
+    annotations.forEach((annotation) => {
+      if (annotation.metadata.new == "yes") {
+        reviewing = true;
+      }
+    })
 
     annotations
       .sort((a, b) => {
@@ -11291,7 +11355,16 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         // }
         var annotationId = annotation.id;
         // Annotations.remove(annotationId)
-
+        if (reviewing) {
+          if (annotation.metadata.new == "yes") {
+            console.log("NEW ANNO");
+          } else {
+            annotation.metadata.old = "yes";
+          }
+        }
+        
+        console.log(annotation);
+        console.log("NEW ANNO2");
         var start_time = parseFloat(annotation.position.start);
         var end_time = parseFloat(annotation.position.end);
         if (end_time >= windowStart && start_time <= windowEnd) {
@@ -11333,6 +11406,12 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
           } else {
             //annotation = that._addAnnotationBox(annotationId, start_time, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], that.vars.activeFeatureType);
+            let color = userPreferences.color;
+            console.log(userPreferences);
+            if (annotation.metadata.old == "yes") {
+              console.log("graying");
+              color = "rgba(80, 80, 80, 0.5)"; 
+            }
             let newAnnotation = that._addAnnotationBox(
               annotationId,
               start_time,
@@ -11342,7 +11421,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
               confidence,
               comment,
               annotation,
-              userPreferences.color
+              color
             );
 
             newAnnotation.metadata.displayType = 'Box';
