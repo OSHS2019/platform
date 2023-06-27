@@ -9,6 +9,7 @@ import dataTablesBootstrap from 'datatables.net-bs';
 import 'datatables.net-bs/css/dataTables.bootstrap.css';
 import { connections } from 'mongoose';
 
+
 Template.createTask.events({
     'click .create-button': function(event,template){
         // Task name should not be empty string
@@ -18,5 +19,24 @@ Template.createTask.events({
             Meteor.call("addTask", document.getElementsByClassName('taskName')[0].value);
             alert("Task added!");
         }
+    }
+})
+
+Template.Tasks.helpers({
+    tasks(){ 
+        let tasks = [{text: "1"}, {text:"2"}, {text: "3"}]
+        // Call backend async
+        Meteor.call("getTask", (err, result)=>{
+            let data = result;
+            let tasks = [];
+            for (item in data){
+                let value = data[item];
+                tasks.push({text: value['TaskName']});
+            }   
+            console.log(tasks);
+            return;
+        });
+        console.log(tasks);
+        return tasks;
     }
 })

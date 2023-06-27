@@ -8,11 +8,17 @@
         </div>
     </div>
     <div>{{> createTask}}</div>
+    <h5>Current Tasks:</h5>
 </template>
+
 
 <template name="createTask">
     <div>
         <input type="text" class="taskName" id="taskName" placeholder="Enter a Task">
         <button type = "button" class = "btn create-button" >Create Task</button>
     </div>
+</template>
+
+<template name="task">
+    <li>{{text}}</li>
 </template>

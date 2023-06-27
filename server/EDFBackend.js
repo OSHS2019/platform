@@ -712,6 +712,13 @@ Meteor.methods({
   "addTask"(taskName){
     return new Promise((resolve, reject) => {
       TaskNames.insert({TaskName: taskName});
+      return resolve();
+    })
+  },
+  // Get all task names
+  "getTask"(){
+    return new Promise((resolve, reject) => {
+      return resolve(TaskNames.find().fetch());
     })
   },
 
