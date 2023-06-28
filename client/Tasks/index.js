@@ -1,4 +1,4 @@
-import { PreferencesFiles, Preferences, Data, Tasks, Assignments, Patients, AnnotationFiles, AlignmentFiles, Annotations} from '/collections';
+import { TaskNames, PreferencesFiles, Preferences, Data, Tasks, Assignments, Patients, AnnotationFiles, AlignmentFiles, Annotations} from '/collections';
 import moment from 'moment';
 import { MaterializeModal } from '/client/Modals/modal.js'
 import { EDFFile } from '/collections';
@@ -24,18 +24,23 @@ Template.createTask.events({
 
 Template.Tasks.helpers({
     tasks(){ 
-        let tasks = [{text: "1"}, {text:"2"}, {text: "3"}]
         // Call backend async
-        Meteor.call("getTask", (err, result)=>{
-            let data = result;
-            let tasks = [];
-            for (item in data){
-                let value = data[item];
-                tasks.push({text: value['TaskName']});
-            }   
-            console.log(tasks);
-            return;
-        });
+        // Meteor.call("getTask", (err, result)=>{
+        //     let data = result;
+        //     let tasks = [];
+        //     for (item in data){
+        //         let value = data[item];
+        //         tasks.push({text: value['TaskName']});
+        //     }   
+        //     console.log(tasks);
+        //     return;
+        // }); 
+        tasks = [];
+        let tasks2 = TaskNames.find({}).fetch();
+        console.log(tasks2);
+        for (let i = 0; i < tasks2.length; i++) { 
+            tasks.push({text: tasks2[i].TaskName});
+        }
         console.log(tasks);
         return tasks;
     }

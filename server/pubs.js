@@ -1,4 +1,4 @@
-import { Patients, Data, Tasks, Guidelines, Instructions, Propositions, Assignments, Annotations, Arbitrations, Preferences, PreferencesFiles, AlignmentFiles, AnnotationFiles } from '/collections'
+import { TaskNames, Patients, Data, Tasks, Guidelines, Instructions, Propositions, Assignments, Annotations, Arbitrations, Preferences, PreferencesFiles, AlignmentFiles, AnnotationFiles } from '/collections'
 
 const annotationFields = {
    'value.metadata.annotatorConfig': 0,
@@ -21,6 +21,7 @@ Meteor.publish('all', function() {
         PreferencesFiles.find({}),
         AlignmentFiles.find({}),
         AnnotationFiles.find({}),
+        TaskNames.find({})
     ]
 });
 
@@ -104,7 +105,7 @@ Meteor.publishComposite('assignment', function(assignmentId) {
     return {
         find() {
             return Assignments.find({ _id: { $in: assignmentIds } });
-        },
+        }, 
         children: [
             {
                 find(assignment) {

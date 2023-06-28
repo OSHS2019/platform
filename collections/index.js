@@ -92,6 +92,7 @@ let Arbitrations;
 let PreferencesFiles;
 let AlignmentFiles;
 let AnnotationFiles;
+let TaskNames;
 
 if (Meteor.isClient) {
     Meteor.subscribe('all');
@@ -715,6 +716,8 @@ Propositions.attachSchema(Schemas.Propositions);
 Propositions.permit(['insert', 'update', 'remove']).ifHasRole('admin').allowInClientCode();
 Propositions.attachCollectionRevisions();
 exports.Propositions = Propositions;
+
+
 
 Assignments = new Meteor.Collection('assignments');
 Schemas.Assignments = new SimpleSchema({
@@ -2489,6 +2492,30 @@ Arbitrations.attachCollectionRevisions();
 exports.Arbitrations = Arbitrations;
 
 Meteor.users.attachCollectionRevisions();
+
+TaskNames = new Meteor.Collection('tasknames');
+//Schemas.TaskNames = new SimpleSchema({
+//    createdAt: SchemaHelpers.createdAt,
+//    updatedAt: SchemaHelpers.updatedAt,
+//    text: {
+//        type: String,
+//        label: 'TaskName',
+//    }, 
+//    // users: {
+//    //     type: Array,
+//    //     label: 'Users',
+//    //     minCount: 0,
+//    // },
+//    // 'users.$': SchemaHelpers.fromCollection(Meteor.users),
+//    //task: SchemaHelpers.fromCollection(Tasks, {
+//    //    optional: true,
+//    //}),
+//    
+//});
+//
+//TaskNames.attachSchema(Schemas.TaskNames);
+TaskNames.attachCollectionRevisions();
+exports.TaskNames = TaskNames;
 
 // Documentation: https://github.com/yogiben/meteor-admin
 // The admin management page

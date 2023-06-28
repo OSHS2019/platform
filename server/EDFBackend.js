@@ -1,6 +1,6 @@
 import { dsvFormat } from "d3-dsv";
 import { Mongo } from "meteor/mongo";
-import { Data, Assignments,EDFFile, Annotations, Preferences, PreferencesFiles, sanitize} from "/collections";
+import { TaskNames, Data, Assignments,EDFFile, Annotations, Preferences, PreferencesFiles, sanitize} from "/collections";
 
 String.prototype.toPascalCase = function () {
 	return this.replace(/\s(.)/g, function ($1) {
@@ -710,6 +710,7 @@ let deleteAssignment = (ids, callback) => {
 Meteor.methods({
   // Add a new task
   "addTask"(taskName){
+    console.log(taskName);
     return new Promise((resolve, reject) => {
       TaskNames.insert({TaskName: taskName});
       return resolve();
