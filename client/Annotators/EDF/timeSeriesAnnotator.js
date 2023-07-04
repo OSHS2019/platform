@@ -136,6 +136,15 @@ let createPreferences = async function(newPreferences){
   });
 }
 
+let doneSendAssignmentHelper = async function(data){
+  await waitForInsertingAnnotationsPromise(data);
+}
+
+let rejectSendAssignmentHelper = async function(assignmentId){
+  await _deleteReviewAnnotations(assignmentId);
+  Assignments.remove(assignmentId);
+}
+
 // Async funciton that wait for us to insert all the info for the reviewer before switching pages
 let doneSwitchPages = async function(data){
   await waitForInsertingAnnotationsPromise(data);
@@ -3887,6 +3896,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             arbitration: that.options.context.assignment.arbitration,
             reviewing: Meteor.userId(),
           };
+          
           doneSwitchPages(data);
           console.log("here")
         }
@@ -3909,6 +3919,8 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             arbitration: that.options.context.assignment.arbitration,
             reviewing: Meteor.userId(),
           };
+          let supervisor = Roles.getUsersInRole('admin');
+          console.log(supervisor);
           doneSwitchPages(data);
           console.log("here")
         } else {
