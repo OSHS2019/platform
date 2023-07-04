@@ -45,3 +45,17 @@ Template.Tasks.helpers({
         return tasks;
     }
 })
+
+Template.task.events({
+    'click .delete': function(event,template){
+        console.log(this);
+        console.log(this._id);
+        const dataId = this._id;
+        console.log(dataId);
+        try{
+            TaskNames.remove(dataId);
+          } catch(err){
+            console.log(err);
+          }
+      }
+  });
