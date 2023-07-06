@@ -2514,6 +2514,7 @@ TaskNames = new Meteor.Collection('tasknames');
 //});
 //
 //TaskNames.attachSchema(Schemas.TaskNames);
+TaskNames.permit(['insert', 'update', 'remove']).ifHasRole('admin').allowInClientCode();
 TaskNames.attachCollectionRevisions();
 exports.TaskNames = TaskNames;
 

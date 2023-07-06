@@ -10,13 +10,12 @@
     <div>{{> createTask}}</div>
     <h5>Current Tasks:</h5> 
       <div class="col s12 data" id="recording">{{> tabular table=TabularTables.TaskNames fields=fields class="table table-striped table-bordered table-condensed"}}</div>
-    
 </template>
 
 
 <template name="createTask">
     <div>
-        <input type="text" class="taskName" id="taskName" placeholder="Enter a Task">
+        <input type="text" class="taskName" id="taskName" placeholder="Enter a Task" style="width:50%; margin: 1%">
         <button type = "button" class = "btn create-button" >Create Task</button>
     </div>
 </template>
