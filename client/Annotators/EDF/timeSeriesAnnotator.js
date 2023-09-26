@@ -1276,14 +1276,16 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
               </div>\
               <div class="graph"></div> \
               <div class="alert alert-info" id="graph-alert" style="display: none"></div>\
-              <div class = "annotation_manager_big_div">\
+              <div class = "graph_navigation_manager">\
                 <div style = "margin-bottom:10px" class = "annotation_manager_container">\
                 </div>\
-                <div style="margin-bottom: 10px" class= "annotation_manager_delete_btn_container">\
+                <div style="margin-bottom: 10px" class= "annotation_manager_btn_container">\
                   <button type = "button" class = "btn annotation_manager_delete_btn">DELETE</button>\
-                </div>\
-                <div style="margin-bottom: 10px" class= "annotation_manager_view_btn_container">\
                   <button type = "button" class = "btn annotation_manager_view_btn">VIEW</button>\
+                </div>\
+                <div style="margin-bottom: 10px" class= "jump_to_time_container">\
+                <input type = "text" class = jump_to_time_input name = "time" placeholder = "HH:MM:SS">\
+                  <button type = "button" class = "btn jump_to_time_btn">JUMP TO TIME</button>\
                 </div>\
               </div>\
               <div class="graph_control"> \
@@ -2072,7 +2074,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     //console.log("_setup.that:", that);
     that._adaptContent();
     that._updateAnnotationManagerSelect();
-    that._startAnnotationManagerEvents();
+    that._startGraphNavigationManagerEvents();
     that._setupTimer();
     that._setupFeaturePanel();
     that._setupNavigationPanel();
@@ -12710,7 +12712,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     });
   },
 
-  _startAnnotationManagerEvents: function(){
+  _startGraphNavigationManagerEvents: function(){
     // here we separate the jQuery elements so that they are not being duplicated for each function call
     // Thus this is only called ONCE at the begginning where we set everything up
     that = this;
@@ -12747,6 +12749,39 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         )
       } else{
         console.log("couldnt view");
+      }
+    })
+
+    $(that.element).find(".jump_to_time_btn").click(function(){
+      console.log("clicked jump to time button");
+      var nextWindowSizeInSeconds = that.vars.xAxisScaleInSeconds;
+      let time_input = $(that.element).find(".jump_to_time_input").val();
+      const pattern = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+      console.log(time_input.match(pattern));
+      if(time_input.match(pattern) == null){
+        console.log("invalid format (HH:MM:SS)");
+        return;
+      }
+
+      var maxTime = that.vars.recordingLengthInSeconds;
+      let time_parts = time_input.split(':');
+      let hours = parseInt(time_parts[0], 10);
+      let minutes = parseInt(time_parts[1], 10);
+      let seconds = parseInt(time_parts[2], 10);
+      let time = hours*60*60 + minutes*60 + seconds;
+      if(time<maxTime){
+        that._switchToWindow(
+          that.options.allRecordings,
+          time,
+          nextWindowSizeInSeconds
+        )
+      } else{
+        console.log("time jump exceed record length, jump to end of file");
+        that._switchToWindow(
+          that.options.allRecordings,
+          maxTime - nextWindowSizeInSeconds,
+          nextWindowSizeInSeconds
+        )
       }
     })
   },

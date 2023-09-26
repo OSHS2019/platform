@@ -277,17 +277,28 @@ dialog .input-field input {
   margin-left: -1px;
 }
 
-.annotation_manager_big_div{
+.graph_navigation_manager{
   display:flex;
   width:100%;
 }
 
-.annotation_manager_container{
+.jump_to_time_container{
   flex:3;
+  display:flex;
 }
 
-.annotation_manager_delete_btn_container{
-  flex:1;
+.jump_to_time_input{
+  min-width: 55px;
+}
+
+.annotation_manager_container{
+  flex:6;
+}
+
+.annotation_manager_btn_container{
+  flex:2;
+  display: flex;
+  margin-right: 5%;
 }
 
 .y-axis-options-container div {
