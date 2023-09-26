@@ -7,6 +7,8 @@ var Highcharts = require("highcharts/highstock");
 require("highcharts-annotations")(Highcharts);
 require("highcharts-boost")(Highcharts);
 
+let filtered_lst = [];
+
 // function that connects to the backend to update an assignment
 let _updateReviewAssignment = (data, update) => {
   return new Promise((resolve, reject) => {
@@ -2186,9 +2188,23 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     });
 
     $(".dropdown-select").find(".dropdown-select-option").off("click.dropdownselect").on("click.dropdownselect", (e) => {
-      $(e.target).closest(".dropdown-select").find(".dropdown-select-check").remove();
+      if(e.target.classList.contains("annotation-filter-option")){
+        if($(e.target).text() !== "All"){
+          $("a[option='all']").find('.dropdown-select-check').remove();
+        }else{
+          $("a[option!='all']").find('.dropdown-select-check').remove();
+        }
+        if($(e.target).find('.dropdown-select-check').length){
+          $(e.target).find(".dropdown-select-check").remove();
+        }else{
+          $(e.target).append(`<span class="dropdown-select-check"><i class="fa fa-check"></i></span>`);
+        }
+      }else{
+        $(e.target).closest(".dropdown-select").find(".dropdown-select-check").remove();
 
-      $(e.target).append(`<span class="dropdown-select-check"><i class="fa fa-check"></i></span>`);
+        $(e.target).append(`<span class="dropdown-select-check"><i class="fa fa-check"></i></span>`);
+      }
+
     });
 
     $("#annotation-manager-dialog").dialog({
@@ -10986,18 +11002,26 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
     $(that.element).find(".annotation-filter-option").on("click.filter-option", function(e){
       var type = e.target.attributes.option.value;
-      var filtered_lst = [];
       if(type == "all"){
+        filtered_lst = []; 
         that.vars.annotationFilters = [];
-        that._displayAnnotations(annotations);
+        if($(e.target).find('.dropdown-select-check').length){
+          that._displayAnnotations(annotations);
+        }else{
+          that._displayAnnotations(filtered_lst);
+        }
       }
       else{
         that.vars.annotationFilters = [type];
         annotations.forEach((item)=>{
           if(item.metadata.annotationLabel == type){
-            filtered_lst.push(item);
+            if($(e.target).find('.dropdown-select-check').length){
+              filtered_lst.push(item);
+            }else{
+              let index = filtered_lst.indexOf(item);
+              filtered_lst.splice(index, 1);
+            }
           }
-
         })
         that._displayAnnotations(filtered_lst);
       }
