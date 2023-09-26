@@ -12179,7 +12179,8 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
             return object;
           }
         }, {});
-        if(el === {}) {
+        // originally if(el === {}) {, not sure if it is needed
+        if(Object.keys(el).length === 0) {
           return arr;
         } else {
           arr.push(el)
