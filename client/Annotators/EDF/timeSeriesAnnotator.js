@@ -4977,6 +4977,12 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
   _switchToWindow: function (allRecordings, start_time, window_length) {
     // the main funciton called when navigating to another window
     var that = this;
+
+    start_time = (start_time > 0 ?
+      (start_time > that.vars.recordingLengthInSeconds - window_length ? Math.min(that.vars.recordingLengthInSeconds - window_length, start_time) : start_time) :
+      0
+    );
+
     //console.log("_switchToWindow.that:", that);
     // can be ignored for now, something to do with the machine learning component of the app
     // console.log(!that._isCurrentWindowSpecifiedTrainingWindow());
@@ -5083,8 +5089,8 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       //console.log("6, windowStartTime:", windowStartTime);
       // gets the data for all the prefetched windows
       var startTime = (windowStartTime > 0 ?
-        (windowStartTime < that.vars.recordingLengthInSeconds + window_length ? Math.min(that.vars.recordingLengthInSeconds, windowStartTime) : windowStartTime) :
-        (windowStartTime > -window_length ? Math.max(0, windowStartTime) : windowStartTime)
+        (windowStartTime > that.vars.recordingLengthInSeconds - window_length ? Math.min(that.vars.recordingLengthInSeconds - window_length, windowStartTime) : windowStartTime) :
+        (windowStartTime < -window_length ? Math.max(0, windowStartTime) : windowStartTime)
       );
       //console.log(that);
       var options = {
