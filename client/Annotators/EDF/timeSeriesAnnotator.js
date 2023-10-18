@@ -110,7 +110,7 @@ let waitForInsertingAnnotationsPromise = async function(data){
     annotations.forEach(doc => {
       var newDoc = {...doc};
       newDoc["assignment"] = id;
-      newDoc["user"] = that.options.context.assignment.reviewer;
+      newDoc["user"] = doc.user;
       delete newDoc.updatedAt;
       delete newDoc._id;
       console.log(newDoc);
@@ -182,7 +182,7 @@ let sendChanges = async function(data){
   annotations.forEach(doc => {
     var newDoc = {...doc};
     newDoc["assignment"] = assignmentId;
-    newDoc["user"] = that.options.context.assignment.reviewing;
+    newDoc["user"] = doc.user;
     delete newDoc.updatedAt;
     delete newDoc._id;
     //console.log(newDoc);
