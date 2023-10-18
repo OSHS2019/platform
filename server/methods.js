@@ -18,7 +18,7 @@ Meteor.methods({
             const id = assignment._id;
             const reviewer = assignment.user;
             Assignments.remove(assignment._id);
-            //Annotations.remove({assignment: id, user: reviewer});
+            Annotations.remove({assignment: id});
             
         } catch (err){
             console.log(err);
