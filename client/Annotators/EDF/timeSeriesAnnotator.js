@@ -8855,7 +8855,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
 
       var index = that._getUniversalAnnotationIndexByXVal(that._getAnnotationXMinFixed(annotation)) + 1;
       var nextAnnotation = that.vars.universalChangePointAnnotationsCache[index] ? that.vars.chart.annotations.allItems.find((a) => a.metadata.id === that.vars.universalChangePointAnnotationsCache[index].id) : undefined;
-
+      
       that._nukeAnnotation(annotation);
 
       if (nextAnnotation !== undefined) {
@@ -11496,11 +11496,9 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
     if (channels && !channels.length) {
       channels = [channels];
     }
-
     const context = that.options.context;
-
-    if (!annotationId || !Annotations.findOne(annotationId)) {
-
+    // Create a new annotation if it didn't exist before, or it is changed during review
+    if (!annotationId || !Annotations.findOne(annotationId) || context.assignment.reviewing && Annotations.findOne(annotationId).user != Meteor.userId()) {
       var graph = $(".graph");
       var annotationDocument = {
         assignment: that.options.context.assignment._id,
