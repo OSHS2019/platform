@@ -9406,24 +9406,6 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       }
     }
 
-    if (annotation.metadata.displayType === "Box" &&
-      annotation.metadata.annotationLabel != undefined &&
-      annotation.metadata.annotationLabel != "undefined" &&
-      annotation.metadata.annotationLabel != "(unanalyzable)" &&
-      annotation.metadata.channelIndices.length != that.vars.allChannels.length) {
-      annotation.metadata.channelIndices = that.vars.allChannels.map((element, index) => index);
-      annotation.update({
-        xValue: annotation.options.xValue,
-        yValue: that._getBorderTopForChannelIndex(0),
-        shape: {
-          params: {
-            width: annotation.options.shape.params.width,
-            height: that.options.graph.channelSpacing * (annotation.metadata.channelIndices.length - that.options.maskedChannels.length),
-          },
-        },
-      })
-      that._saveFeatureAnnotation(annotation);
-    }
     if(annotation.metadata.annotationLabel === undefined && annotation.metadata.displayType === "Box"){
       console.log(this.vars.previousAnnotationLabelBox);
       annotation.metadata.annotationLabel = this.vars.previousAnnotationLabelBox;
