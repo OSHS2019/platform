@@ -9406,6 +9406,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
       }
     }
 
+    /* This makes event box cover all channels
     if (annotation.metadata.displayType === "Box" &&
       annotation.metadata.annotationLabel != undefined &&
       annotation.metadata.annotationLabel != "undefined" &&
@@ -9423,7 +9424,7 @@ $.widget("crowdeeg.TimeSeriesAnnotator", {
         },
       })
       that._saveFeatureAnnotation(annotation);
-    }
+    }*/
     if(annotation.metadata.annotationLabel === undefined && annotation.metadata.displayType === "Box"){
       console.log(this.vars.previousAnnotationLabelBox);
       annotation.metadata.annotationLabel = this.vars.previousAnnotationLabelBox;
